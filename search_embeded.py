@@ -28,6 +28,7 @@ def main():
     #φορτωνουμε τα embeddings
     db_vectors = load_embeddings(args.database)
     print(f"Loaded {len(db_vectors)} protein embeddings.")
+    query_vectors = load_embeddings("target_vectors.dat.npy")
 
     # φορτωνουμε τα queries
     queries = load_queries(args.query)
@@ -47,6 +48,33 @@ def main():
 
     # Αποθήκευση αποτελεσμάτων
     output_lines = []
+
+    # loop για καθε query
+    for q_id, _ in queries:
+        query_vector =query_vectors[q_id]
+        if query_vector is None:
+            print(f"Query {q_id} not found in embeddings, skipping...")
+            continue
+        for method_name in methods.keys():
+            start_time = time.time()
+
+            distances = [(pid,np.linalg.norm(query_vector - vec)) for pid, vec in db_vectors.items()]
+            distances.sort(key=lambda x: x[1])
+            top_N = distances[:args.N]
+
+            elapsed = time.time() - start_time
+
+            #Αποθηκευση αποτελεσματων
+            output_lines.append(f"Query Protein: {q_id}")
+            output_lines.append(f"Method: {method_name} | Time: {elapsed:.4f}s | Top-{args.N}")
+            output_lines.append("Rank\tNeighbor ID\tL2 Distance")
+            for rank, (pid, dist) in enumerate(top_N, 1):
+                output_lines.append(f"{rank}\t{pid}\t{dist:.4f}")
+            output_lines.append("\n")
+    #γραφουμε σε αρχειο
+    with open(args.output, "w") as f:
+        f.write("\n".join(output_lines))
+    print(f"Results saved to {args.output}")
 
 if __name__ == "__main__":
     main()
