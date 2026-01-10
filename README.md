@@ -25,7 +25,7 @@ ry-sets&pfam-info/targets.fasta"   -o results_lsh.txt   -blast blast_results.tsv
  --lsh_L 5   --lsh_w 4.0   -N 10   --recall_N 50
 
 # script με Hypercube+Recall
- python ./search_embeded.py \
+ python ./protein_search.py \
     -d protein_vectors.npy \
     -q "./data-query-sets&pfam-info/targets.fasta" \
     -o results_hypercube.txt \
