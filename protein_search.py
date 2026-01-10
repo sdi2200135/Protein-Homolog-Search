@@ -266,7 +266,8 @@ from ANN.euclidean_lsh import EuclideanLSH
 from Hypercube.hypercube import Hypercube
 from IVFFlat.ivfflat import IVFFlat
 from IVFPQ.ivfpq import IVFPQSearch
-from Neural.neural_lsh import NeuralLSH
+# from Neural.neural_lsh import NeuralLSH
+from protein_embed import load_embeddings_single_file 
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Protein search using embeddings and ANN")
@@ -307,10 +308,17 @@ def load_uniprot_info(filepath):
     
     with open(filepath, 'r') as f:
         return json.load(f)
+# Προσθήκη στο protein_search.py
+def is_remote_homolog(identity, distance_threshold=0.3):
+    """Check if protein is a remote homolog candidate"""
+    return identity < 30  # Twilight Zone threshold
 
 def get_bio_comment(uniprot_info, query_id, neighbor_id, identity):
     """Generate biological comment based on annotations"""
-    if identity > 30:
+    # Προσθέστε στο get_bio_comment:
+    if is_remote_homolog(identity):
+        comment = f"REMOTE HOMOLOG CANDIDATE ({identity:.1f}%)"
+    elif identity > 30:
         return "High similarity"
     elif identity > 20:
         comment = f"Twilight Zone ({identity:.1f}%)"
@@ -382,17 +390,20 @@ def embed_sequences(sequences, model, batch_converter, max_length=1022):
     return embeddings
 
 def load_embeddings(file):
-    """Load embeddings from .npy file"""
-    data = np.load(file, allow_pickle=True)
-    if isinstance(data, np.ndarray):
-        # If it's a numpy array, check if it's a dictionary
-        if data.dtype == object and data.shape == ():
-            return data.item()
-        else:
-            # Convert array to dict with indices as keys
-            return {f"prot_{i}": emb for i, emb in enumerate(data)}
-    else:
-        return data
+    # """Load embeddings from .npy file"""
+    # data = np.load(file, allow_pickle=True)
+    # if isinstance(data, np.ndarray):
+    #     # If it's a numpy array, check if it's a dictionary
+    #     if data.dtype == object and data.shape == ():
+    #         return data.item()
+    #     else:
+    #         # Convert array to dict with indices as keys
+    #         return {f"prot_{i}": emb for i, emb in enumerate(data)}
+    # else:
+    #     return data
+    embeddings, ids = load_embeddings_single_file(file)
+    # Δημιουργία dict όπως περιμένει το υπόλοιπο script
+    return {pid: emb for pid, emb in zip(ids, embeddings)}
 
 def load_blast_results(blast_file, recall_N=50):
     """Load and parse BLAST results"""
