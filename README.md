@@ -20,7 +20,7 @@ python protein_embed.py -i "data-query-sets&pfam-info/swissprot_50k.fasta" -o ou
   -evalue 0.01
 
 # script με LSH+Recall
-python ./search_embeded.py   -d protein_vectors.npy   -q "./data-que
+python ./protein_search.py   -d output.dat   -q "./data-que
 ry-sets&pfam-info/targets.fasta"   -o results_lsh.txt   -blast blast_results.tsv   -method lsh   --lsh_k 10  
  --lsh_L 5   --lsh_w 4.0   -N 10   --recall_N 50
 
@@ -34,3 +34,42 @@ ry-sets&pfam-info/targets.fasta"   -o results_lsh.txt   -blast blast_results.tsv
     -N 10 \
     --recall_N 50
 
+
+# Δημιουργία embeddings
+python protein_embed.py -i "data-query-sets&pfam-info/swissprot_50k.fasta" -o protein_vectors.dat
+
+# Δημιουργία BLAST βάσης
+makeblastdb -in "data-query-sets&pfam-info/swissprot_50k.fasta" -dbtype prot -out blast/swissprot_db
+
+# Τρέξιμο BLAST
+blastp -query "data-query-sets&pfam-info/targets.fasta" \
+  -db blast/swissprot_db \
+  -out blast_results.txt \
+  -outfmt 6 \
+  -evalue 0.01
+
+# Αναζήτηση με LSH
+python protein_search.py \
+  -d output.dat \
+  -q "data-query-sets&pfam-info/targets.fasta" \
+  -o results_lsh.txt \
+  -blast blast_results.txt \
+  -method lsh \
+  --lsh_k 10 \
+  --lsh_L 5 \
+  --lsh_w 4.0 \
+  -N 10 \
+  --recall_N 50
+
+# Αναζήτηση με Hypercube
+  python protein_search.py \
+  -d protein_vectors.dat \
+  -q "data-query-sets&pfam-info/targets.fasta" \
+  -o results_hypercube.txt \
+  -blast blast_results.txt \
+  -method hypercube \
+  --hypercube_k 10 \
+  --hypercube_M 1000 \
+  --hypercube_probes 5 \
+  -N 10 \
+  --recall_N 50
