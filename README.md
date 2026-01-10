@@ -46,8 +46,15 @@ blastp -query "data-query-sets&pfam-info/targets.fasta" -db blast/swissprot_db -
 
 # Αναζήτηση με LSH
 python protein_search.py -d output.dat -q "data-query-sets&pfam-info/targets.fasta" -o results_lsh.txt -blast blast_results.txt 
-  -method lsh --lsh_k 10 --lsh_L 5 --lsh_w 4.0 -N 10 --recall_N 50
+-method lsh --lsh_k 10 --lsh_L 5 --lsh_w 4.0 -N 10 --recall_N 50
 
 # Αναζήτηση με Hypercube
-  python protein_search.py -d protein_vectors.dat -q "data-query-sets&pfam-info/targets.fasta" -o results_hypercube.txt 
-  -blast blast_results.txt -method hypercube --hypercube_k 10 --hypercube_M 1000 --hypercube_probes 5 -N 10 --recall_N 50
+python protein_search.py -d output.dat -q "data-query-sets&pfam-info/targets.fasta" -o results_hypercube.txt 
+-blast blast_results.txt -method hypercube --hypercube_k 10 --hypercube_M 1000 --hypercube_probes 5 -N 10 --recall_N 50
+
+# Αναζήτηση με IVFFlat
+python protein_search.py -d output.dat -q "data-query-sets&pfam-info/targets.fasta" -o results_ivfflat.txt -blast blast_results.txt -method ivfflat --ivfflat_nlist 100 --ivfflat_nprobe 10 -N 10 --recall_N 50
+
+# Αναζήτηση με IVFPQ
+python protein_search.py -d output.dat -q "data-query-sets&pfam-info/targets.fasta" -o results_ivfpq.txt -blast blast_results.txt 
+-method ivfpq --ivfpq_nlist 100 --ivfpq_nprobe 10 --ivfpq_m 8 -N 10 --recall_N 50
