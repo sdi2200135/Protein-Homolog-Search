@@ -54,3 +54,4 @@ class EuclideanLSH:
         
         results.sort(key=lambda x: x[1])
         return results[:N]
+    
