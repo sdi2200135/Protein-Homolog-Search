@@ -160,7 +160,7 @@ import torch
 from Bio import SeqIO
 from tqdm import tqdm
 
-# Προσπάθεια εισαγωγής του ESM
+# Προσπάθεια εισαγωγής του ESM,αν δεν υπάρχει το πρόγραμμα τερματίζει
 try:
     import esm
     from esm import pretrained
@@ -173,15 +173,13 @@ except ImportError:
 warnings.filterwarnings("ignore")
 
 class ProteinEmbedder:
-    def __init__(self, model_name="esm2_t6_8M_UR50D", device=None, batch_size=8, max_length=1022):
-        """
-        Αρχικοποίηση του embedder πρωτεϊνών.
-        """
-        self.model_name = model_name
-        self.batch_size = batch_size
-        self.max_length = max_length
+    # Αρχικοποίηση του embedder πρωτεϊνών
+    def __init__(self, model_name="esm2_t6_8M_UR50D", device=None, batch_size=8, max_length=1022):    
+        self.model_name = model_name # ονομα εκπαιδευμένου μοντέλου ΕΣΜ-2
+        self.batch_size = batch_size # ποσες ακολουθιες επεξεργαζονται ταυτοχρονα 
+        self.max_length = max_length #μεγιστο μηκος ακολουθιας
         
-        # Αυτόματη επιλογή συσκευής
+        # Αυτόματη επιλογή συσκευής,αν cpu->cuda αλλιως cpu
         if device is None:
             self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         else:
@@ -190,12 +188,12 @@ class ProteinEmbedder:
         print(f"Χρήση συσκευής: {self.device}")
         print(f"Φόρτωση μοντέλου {model_name}...")
         
-        # Φόρτωση μοντέλου
-        self.model, self.alphabet = pretrained.load_model_and_alphabet_hub(model_name)
-        self.model = self.model.to(self.device)
-        self.model.eval()
+      
+        self.model, self.alphabet = pretrained.load_model_and_alphabet_hub(model_name)  # Φόρτωση προεκπαιδευμενου μοντέλου και αλφαβητου
+        self.model = self.model.to(self.device) #μεταγορα μοντελου στη συσκευη
+        self.model.eval() #μοντελο σε evaluation mode,απενεργοποιει dropout
         
-        self.batch_converter = self.alphabet.get_batch_converter()
+        self.batch_converter = self.alphabet.get_batch_converter() # μετατροπη conventer -> tokens
         
         # Πληροφορίες μοντέλου
         self.num_layers = len(self.model.layers)
@@ -204,25 +202,24 @@ class ProteinEmbedder:
         print(f"Αριθμός επιπέδων: {self.num_layers}")
         print(f"Διάσταση embeddings: {self.embedding_dim}")
     
+    # Περικόπτει ακολουθιες που ξεπερνουν το max_length
     def truncate_sequence(self, sequence):
-        """Περικόπτει την ακολουθία αν είναι πολύ μεγάλη."""
         if len(sequence) > self.max_length:
             return sequence[:self.max_length]
         return sequence
-    
+   
+    # Εξάγει embeddings για ένα batch ακολουθιών.  
     def embed_batch(self, batch_data):
-        """
-        Εξάγει embeddings για ένα batch ακολουθιών.
-        """
-        labels, strs, tokens = self.batch_converter(batch_data)
+        
+        labels, strs, tokens = self.batch_converter(batch_data) #μετατροπη ακολουθιων σε tokens
         tokens = tokens.to(self.device)
         
-        with torch.no_grad():
-            results = self.model(tokens, repr_layers=[self.num_layers])
+        with torch.no_grad(): #απενεργοποιηση gradients
+            results = self.model(tokens, repr_layers=[self.num_layers]) # represantation απο το τελευταιο layer
         
-        token_embeddings = results["representations"][self.num_layers]
+        token_embeddings = results["representations"][self.num_layers]  # tensor διαστασεις(batch,seq_len, embedding_dim) 
         
-        # Mean pooling με mask για padding
+        # Mean pooling με mask αγνοουμε padding tokens
         mask = (tokens != self.alphabet.padding_idx).float()
         mask_expanded = mask.unsqueeze(-1).expand(token_embeddings.size())
         
@@ -230,18 +227,18 @@ class ProteinEmbedder:
         token_counts = torch.sum(mask, dim=1, keepdim=True)
         embeddings = sum_embeddings / token_counts.clamp(min=1e-9)
         
-        return embeddings.cpu().numpy(), [data[0] for data in batch_data]
+        return embeddings.cpu().numpy(), [data[0] for data in batch_data] #επιστροφη σε numpy
     
+    # Εξάγει embeddings για όλες τις ακολουθίες σε ένα FASTA αρχείο.
     def embed_fasta(self, fasta_path):
-        """
-        Εξάγει embeddings για όλες τις ακολουθίες σε ένα FASTA αρχείο.
-        """
+        
         print(f"Ανάγνωση FASTA αρχείου: {fasta_path}")
         
         # Ανάγνωση ακολουθιών
         sequences = []
         total_seqs = 0
         
+        #αναγνωση FASTA με BioPython
         for record in SeqIO.parse(fasta_path, "fasta"):
             seq_id = record.id
             seq_str = str(record.seq)
@@ -283,7 +280,7 @@ class ProteinEmbedder:
             all_embeddings.append(batch_embeddings)
             all_ids.extend(batch_ids)
         
-        # Συνένωση
+        # Συνένωση ολων των batches
         if all_embeddings:
             all_embeddings = np.vstack(all_embeddings)
         else:
@@ -295,10 +292,9 @@ class ProteinEmbedder:
         
         return all_embeddings, all_ids
     
+    # Αποθήκευση embeddings και IDs σε ΕΝΑ δυαδικό αρχείο.
     def save_single_file(self, embeddings, ids, output_path):
-        """
-        Αποθήκευση embeddings και IDs σε ΕΝΑ δυαδικό αρχείο.
-        
+        """ 
         Δομή αρχείου:
         1. Header:
            - Magic number (4 bytes): "ESM2"
@@ -326,7 +322,7 @@ class ProteinEmbedder:
             # 1. HEADER
             f.write(b'ESM2')                     # Magic number (4 bytes)
             f.write(struct.pack('B', 1))         # Version (1 byte)
-            f.write(struct.pack('I', N))         # Num proteins (4 bytes)
+            f.write(struct.pack('I', N))         # αριθμος πρωτεινων (4 bytes)
             f.write(struct.pack('I', D))         # Embedding dim (4 bytes)
             f.write(struct.pack('I', max_id_len)) # Max ID length (4 bytes)
             
@@ -348,11 +344,9 @@ class ProteinEmbedder:
         print(f"Αποθηκεύτηκε επιτυχώς στο: {output_path}")
         print(f"Συνολικό μέγεθος αρχείου: {os.path.getsize(output_path) / (1024**2):.2f} MB")
 
+# Φόρτωση embeddings από το ενιαίο αρχείο.
 def load_embeddings_single_file(file_path):
-    """
-    Φόρτωση embeddings από το ενιαίο αρχείο.
-    Χρήσιμο για debugging και για το search script.
-    """
+   
     print(f"Φόρτωση embeddings από: {file_path}")
     
     with open(file_path, 'rb') as f:

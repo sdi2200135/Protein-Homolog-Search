@@ -269,6 +269,7 @@ from IVFPQ.ivfpq import IVFPQSearch
 # from Neural.neural_lsh import NeuralLSH
 from protein_embed import load_embeddings_single_file 
 
+#Ορισμος και αναγνωση arguments απο τη γραμμη εντολων
 def parse_args():
     parser = argparse.ArgumentParser(description="Protein search using embeddings and ANN")
     parser.add_argument("-d", "--database", required=True, help="Protein vectors (.npy)")
@@ -282,7 +283,7 @@ def parse_args():
                        default="all", help="ANN method to use")
     parser.add_argument("--max_length", type=int, default=1022, help="Max sequence length for embedding")
     
-    # Method parameters
+    # Method παραμετροι
     parser.add_argument("--lsh_k", type=int, default=10, help="LSH: number of hash functions")
     parser.add_argument("--lsh_L", type=int, default=5, help="LSH: number of hash tables")
     parser.add_argument("--lsh_w", type=float, default=4.0, help="LSH: bucket width")
@@ -296,23 +297,24 @@ def parse_args():
     parser.add_argument("--ivfpq_m", type=int, default=8, help="IVFPQ: subvectors")
     parser.add_argument("--neural_epochs", type=int, default=10, help="Neural LSH: epochs")
     
-    # Additional parameters for biological evaluation
+    # παραμετρος UniProt annotations (προαιρετικα)
     parser.add_argument("--uniprot_info", help="JSON file with UniProt annotations (optional)")
     
     return parser.parse_args()
 
+# Φορτωνει UniProt annotations 
 def load_uniprot_info(filepath):
-    """Load UniProt annotations from JSON file"""
-    if not filepath or not os.path.exists(filepath):
+    if not filepath or not os.path.exists(filepath): #διαβασμα αρχειου json ,αν δεν υπαρχει επιστροφη κενου
         return {}
     
     with open(filepath, 'r') as f:
         return json.load(f)
 
+# Ελεγχει αν 2 πρωτεινες ειναι απομακρυσμενοι ομολογοι
 def is_remote_homolog(identity, distance_threshold=0.3):
-    """Check if protein is a remote homolog candidate"""
     return identity < 30  # Twilight Zone threshold
 
+# Δημιουργει βιολογικο σχολιου 
 def get_bio_comment(uniprot_info, query_id, neighbor_id, identity):
     """Generate biological comment based on annotations"""
     if is_remote_homolog(identity):
@@ -326,12 +328,12 @@ def get_bio_comment(uniprot_info, query_id, neighbor_id, identity):
     else:
         comment = "No BLAST match"
     
-    # Add annotation info if available
+    # Αν υπαρχουν UniProt annotations
     if uniprot_info:
         query_annot = uniprot_info.get(query_id, {})
         neighbor_annot = uniprot_info.get(neighbor_id, {})
         
-        # Check for common domains
+        # ελεγχος κοινων domains
         if query_annot and neighbor_annot:
             query_domains = set(query_annot.get('domains', []))
             neighbor_domains = set(neighbor_annot.get('domains', []))
@@ -340,7 +342,7 @@ def get_bio_comment(uniprot_info, query_id, neighbor_id, identity):
             if common_domains:
                 comment += f" [Common domains: {', '.join(list(common_domains)[:2])}]"
             
-            # Check for similar EC numbers
+            # ελεγχος EC numbers
             query_ec = set(query_annot.get('ec_numbers', []))
             neighbor_ec = set(neighbor_annot.get('ec_numbers', []))
             common_ec = query_ec.intersection(neighbor_ec)
@@ -350,25 +352,26 @@ def get_bio_comment(uniprot_info, query_id, neighbor_id, identity):
     
     return comment
 
+# Φορτωνει ESM μοντελο (μονο για queries)
 def load_esm_model():
-    """Load ESM-2 model for embedding queries"""
     model, alphabet = esm.pretrained.esm2_t6_8M_UR50D()
     model.eval()
+    
     if torch.cuda.is_available():
         model = model.cuda()
+    
     batch_converter = alphabet.get_batch_converter()
     return model, batch_converter
 
+# Μετατρεπει ακολουθιες σε embeddings
 def embed_sequences(sequences, model, batch_converter, max_length=1022):
-    """Embed a list of (id, sequence) pairs"""
     embeddings = {}
-    
-    # Process in batches
     batch_size = 32
+
     for i in range(0, len(sequences), batch_size):
         batch = sequences[i:i+batch_size]
         
-        # Prepare batch
+        # περιορισμος μηκους ακολουθιας
         data = [(pid, seq[:max_length]) for pid, seq in batch]
         labels, strs, tokens = batch_converter(data)
         
@@ -379,7 +382,7 @@ def embed_sequences(sequences, model, batch_converter, max_length=1022):
             output = model(tokens, repr_layers=[6])
             token_reps = output["representations"][6].cpu()
         
-        # Process each sequence in batch
+        # Mean pooling
         for j, (pid, seq) in enumerate(batch):
             seq_len = min(len(seq), max_length)
             reps = token_reps[j, 1:seq_len+1]
@@ -388,14 +391,13 @@ def embed_sequences(sequences, model, batch_converter, max_length=1022):
     
     return embeddings
 
+# Φορτωνει embeddings απο δυαδικο αρχειο και μετατρεπει σε dict 
 def load_embeddings(file):
-    """Load embeddings using the provided function"""
     embeddings, ids = load_embeddings_single_file(file)
-    # Δημιουργία dict όπως περιμένει το υπόλοιπο script
     return {pid: emb for pid, emb in zip(ids, embeddings)}
 
+# Φορτωνει BLAST αποτελεσματα
 def load_blast_results(blast_file, recall_N=50):
-    """Load and parse BLAST results"""
     cols = ["query", "subject", "pident", "length", "mismatch", "gapopen",
             "qstart", "qend", "sstart", "send", "evalue", "bitscore"]
     
@@ -405,16 +407,16 @@ def load_blast_results(blast_file, recall_N=50):
         print(f"Error loading BLAST file: {e}")
         return {}, {}
     
-    # Filter by evalue (as specified in assignment)
+    # φιλτραρισμα evalue 
     df = df[df["evalue"] < 0.01]
     
-    # Get top-N for recall calculation (sorted by bitscore)
+    # Παιρνουμε τα top-N για recall calculation
     blast_topN = {}
     for query, group in df.groupby("query"):
         top_hits = group.nlargest(recall_N, "bitscore")
         blast_topN[query] = set(top_hits["subject"].tolist())
     
-    # Create identity dictionary for all hits
+    # Δημιουργια identity dictionary για ολα τα  hits
     blast_identity = {}
     for _, row in df.iterrows():
         blast_identity.setdefault(row["query"], {})[row["subject"]] = row["pident"]
@@ -422,8 +424,8 @@ def load_blast_results(blast_file, recall_N=50):
     print(f"Loaded BLAST results: {len(blast_topN)} queries, {len(df)} total hits")
     return blast_topN, blast_identity
 
+#Δημιουργει ολες τις επιλεγμενες ANN μεθοδους
 def initialize_methods(args, db_embeddings):
-    """Initialize all selected ANN methods"""
     methods = {}
     
     # Euclidean LSH
@@ -435,7 +437,7 @@ def initialize_methods(args, db_embeddings):
             w=args.lsh_w,
             seed=42
         )
-        print(f"✓ Euclidean LSH initialized (k={args.lsh_k}, L={args.lsh_L}, w={args.lsh_w})")
+        print(f"Euclidean LSH initialized (k={args.lsh_k}, L={args.lsh_L}, w={args.lsh_w})")
     
     # Hypercube
     if args.method in ["all", "hypercube"]:
@@ -447,7 +449,7 @@ def initialize_methods(args, db_embeddings):
             w=args.lsh_w,
             seed=42
         )
-        print(f"✓ Hypercube initialized (k={args.hypercube_k}, M={args.hypercube_M})")
+        print(f"Hypercube initialized (k={args.hypercube_k}, M={args.hypercube_M})")
     
     # IVF-Flat
     if args.method in ["all", "ivfflat"]:
@@ -457,7 +459,7 @@ def initialize_methods(args, db_embeddings):
             nprobe=args.ivfflat_nprobe,
             seed=42
         )
-        print(f"✓ IVF-Flat initialized (nlist={args.ivfflat_nlist}, nprobe={args.ivfflat_nprobe})")
+        print(f"IVF-Flat initialized (nlist={args.ivfflat_nlist}, nprobe={args.ivfflat_nprobe})")
     
     # IVF-PQ
     if args.method in ["all", "ivfpq"]:
@@ -468,7 +470,7 @@ def initialize_methods(args, db_embeddings):
             m=args.ivfpq_m,
             seed=42
         )
-        print(f"✓ IVF-PQ initialized (nlist={args.ivfpq_nlist}, m={args.ivfpq_m})")
+        print(f"IVF-PQ initialized (nlist={args.ivfpq_nlist}, m={args.ivfpq_m})")
     
     # Neural LSH
     if args.method in ["all", "neural"]:
@@ -477,12 +479,12 @@ def initialize_methods(args, db_embeddings):
             epochs=args.neural_epochs,
             seed=42
         )
-        print(f"✓ Neural LSH initialized (epochs={args.neural_epochs})")
+        print(f"Neural LSH initialized (epochs={args.neural_epochs})")
     
     return methods
 
+#Μετατρεπει αποσταση σε float
 def format_distance(distance):
-    """Ensure distance is a float for formatting"""
     if isinstance(distance, (str, np.str_)):
         try:
             return float(distance)
@@ -495,29 +497,34 @@ def format_distance(distance):
             return 0.0
 
 def main():
+    # Αναγνωση παραμετρων
     args = parse_args()
     
-    # Create output directory if needed
+    # Δημιουργια φακελου εξοου αν υπαρχει
     os.makedirs(os.path.dirname(args.output) if os.path.dirname(args.output) else '.', exist_ok=True)
     
-    # Load UniProt annotations if provided
+    # Φορτωση UniProt annotations
     uniprot_info = load_uniprot_info(args.uniprot_info) if args.uniprot_info else {}
     
-    # 1. Load database embeddings
+    # 1. Φορτωση embeddings βασης δεδομενων
     print(f"Loading database embeddings from {args.database}...")
     db_embeddings = load_embeddings(args.database)
-    if not isinstance(db_embeddings, dict):
-        # Convert to dictionary format if needed
-        db_embeddings = {f"prot_{i}": emb for i, emb in enumerate(db_embeddings)}
-    print(f"✓ Loaded {len(db_embeddings)} protein embeddings")
     
-    # 2. Load or compute query embeddings
+    if not isinstance(db_embeddings, dict):
+        # Μετατροπη σε λεξικο
+        db_embeddings = {f"prot_{i}": emb for i, emb in enumerate(db_embeddings)}
+    print(f"Loaded {len(db_embeddings)} protein embeddings")
+    
+    # 2. Φορτωση ή υπολογισμος query embeddings
     if args.query_embeddings and os.path.exists(args.query_embeddings):
+        # αν υπαρχουν προυπολογισμενα embeddings
         print(f"Loading pre-computed query embeddings from {args.query_embeddings}...")
         query_embeddings = load_embeddings(args.query_embeddings)
     else:
+        # διαφορετικα υπολογιζονται απο FASTA 
         print(f"Loading and embedding queries from {args.query}...")
         model, batch_converter = load_esm_model()
+        
         queries = [(record.id, str(record.seq)) for record in SeqIO.parse(args.query, "fasta")]
         query_embeddings = embed_sequences(queries, model, batch_converter, args.max_length)
         
@@ -525,13 +532,13 @@ def main():
             np.save(args.query_embeddings, query_embeddings)
             print(f"✓ Saved query embeddings to {args.query_embeddings}")
     
-    print(f"✓ Loaded {len(query_embeddings)} query embeddings")
+    print(f"Loaded {len(query_embeddings)} query embeddings")
     
-    # 3. Load BLAST results (Ground Truth)
+    # 3. Φορτωση BLAST αποτελεσματων (Ground Truth)
     print(f"Loading BLAST results from {args.blast_file}...")
     blast_topN, blast_identity = load_blast_results(args.blast_file, args.recall_N)
     
-    # 4. Initialize ANN methods
+    # 4. Αρχικοποιηση ANN μεθοδων
     print("\nInitializing ANN methods...")
     methods = initialize_methods(args, db_embeddings)
     
@@ -539,32 +546,34 @@ def main():
         print("Error: No ANN methods could be initialized!")
         return
     
-    print(f"\n✓ Successfully initialized {len(methods)} methods")
+    print(f"\nSuccessfully initialized {len(methods)} methods")
     
-    # 5. Process queries
+    # 5. Επεξεργασια queries
     print(f"\nProcessing {len(query_embeddings)} queries...")
     
-    results = []
+    results = [] # λιστα με γραμμες αποτελεσματων
+
+    # στατιστικα ανα μεθοδο
     method_stats = {name: {'total_time': 0.0, 'total_recall': 0.0, 'qps': []} 
                    for name in methods}
     
-    # Start timing for overall QPS calculation
+    # εναρξη χρονου για QPS
     overall_start_time = time.time()
     
-    # Process each query
+    # Loop  πανω σε καθε query
     for query_id, query_vec in tqdm(query_embeddings.items(), desc="Queries"):
         query_output = []
         
-        # Query header (EXACTLY as specified in assignment)
+        # Query header
         query_output.append(f"Query Protein: {query_id}")
         query_output.append(f"N = {args.recall_N} (μέγεθος λίστας Top-N για την αξιολόγηση Recall@N)")
         query_output.append("")
         
-        # Get BLAST hits for this query
+        # BLAST hits για το συγκεκιμενο query
         blast_hits = blast_topN.get(query_id, set())
         identities = blast_identity.get(query_id, {})
         
-        # [1] Summary comparison table (EXACT format as assignment)
+        # Summary comparison tabl
         query_output.append("[1] Συνοπτική σύγκριση μεθόδων")
         query_output.append("-" * 70)
         query_output.append("Method            | Time/query (s) | QPS     | Recall@N vs BLAST Top-N")
@@ -572,31 +581,32 @@ def main():
         
         method_neighbors = {}
         
-        # Evaluate each method
+        # Εκτελεση καθε ΑΝΝ μεθοδου
         for method_name, method_obj in methods.items():
             try:
-                # Time the search
+                # χρονος για search
                 start_time = time.time()
+                #Αναζητηση γειτονων
                 neighbors = method_obj.query(query_vec, args.recall_N)
                 elapsed = time.time() - start_time
                 
-                # Calculate recall
+                # Υπολογισμος recall
                 neighbor_ids = [pid for pid, _ in neighbors[:args.recall_N]]
                 hits = sum(1 for pid in neighbor_ids if pid in blast_hits)
                 recall = hits / min(args.recall_N, len(blast_hits)) if blast_hits else 0
                 
-                # Calculate QPS for this query
+                # Υπολογισμος QPS για αυτο το query
                 qps = 1.0 / elapsed if elapsed > 0 else 0
                 
-                # Update statistics
+                # Ενημερωση στατιστικων
                 method_stats[method_name]['total_time'] += elapsed
                 method_stats[method_name]['total_recall'] += recall
                 method_stats[method_name]['qps'].append(qps)
                 
-                # Format exactly as in assignment example
+                # καταγραφη γραμμης αποτελεσματος
                 query_output.append(f"{method_name:16} | {elapsed:12.3f} | {qps:7.1f} | {recall:.3f}")
                 
-                # Store neighbors for detailed output
+                # αποθηκευση γειτονων
                 method_neighbors[method_name] = neighbors[:args.N]
                 
             except Exception as e:
@@ -604,12 +614,12 @@ def main():
                 print(f"Error in {method_name} for query {query_id}: {e}")
                 method_neighbors[method_name] = []
         
-        # Add BLAST reference line (as in assignment example)
+        # BLAST reference
         query_output.append(f"{'BLAST (Ref)':16} | {'-':12} | {'-':7} | 1.000")
         query_output.append("-" * 70)
         query_output.append("")
         
-        # [2] Detailed neighbors per method (EXACT format as assignment)
+        # Detailed neighbors για καθε μεθοδο
         query_output.append(f"[2] Top-{args.N} γείτονες ανά μέθοδο (εδώ π.χ. N = {args.N} για εκτύπωση)")
         query_output.append("")
         
@@ -630,7 +640,6 @@ def main():
                 in_blast = "Yes" if neighbor_id in blast_hits else "No"
                 comment = get_bio_comment(uniprot_info, query_id, neighbor_id, identity)
                 
-                # Format exactly as in assignment example
                 query_output.append(f"{rank:4} | {neighbor_id:11} | {distance:7.3f} | "
                                   f"{identity:13.1f}% | {in_blast:15} | {comment}")
             
@@ -640,11 +649,10 @@ def main():
         query_output.append("")
         results.extend(query_output)
     
-    # Calculate overall QPS
+    # Τελικη συνοψη
     overall_elapsed = time.time() - overall_start_time
     overall_qps = len(query_embeddings) / overall_elapsed if overall_elapsed > 0 else 0
-    
-    # Add final summary
+  
     results.append("\n=== ΣΥΝΟΠΤΙΚΗ ΣΤΑΤΙΣΤΙΚΗ ===")
     results.append(f"Συνολικός αριθμός queries: {len(query_embeddings)}")
     results.append(f"Μέγεθος βάσης δεδομένων: {len(db_embeddings)}")
@@ -664,17 +672,17 @@ def main():
             results.append(f"  Μέσος Recall@{args.recall_N}: {avg_recall:.3f}")
             results.append("")
     
-    # 6. Save results
+    # Αποθηκευση αποτελεσματων
     with open(args.output, 'w', encoding='utf-8') as f:
         f.write("\n".join(results))
     
-    print(f"\n✓ Results saved to {args.output}")
+    print(f"\nResults saved to {args.output}")
     print(f"\n=== ΣΥΝΟΠΤΙΚΑ ΑΠΟΤΕΛΕΣΜΑΤΑ ===")
     print(f"Συνολικός αριθμός queries: {len(query_embeddings)}")
     print(f"Συνολικός χρόνος: {overall_elapsed:.2f}s")
     print(f"Συνολικό QPS: {overall_qps:.1f}")
     
-    # Print method summaries
+
     for method_name, stats in method_stats.items():
         if len(query_embeddings) > 0:
             avg_recall = stats['total_recall'] / len(query_embeddings)
