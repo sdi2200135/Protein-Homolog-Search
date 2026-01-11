@@ -8,151 +8,123 @@ from typing import List, Tuple, Dict, Set
 
 class IVFFlat:
     def __init__(self, vectors: Dict[str, np.ndarray], nlist: int = 100, nprobe: int = 10, seed: int = 42):
-        """
-        IVF-Flat implementation for protein embeddings.
-        
-        Args:
-            vectors: Dictionary mapping protein IDs to embedding vectors
-            nlist: Number of clusters (centroids)
-            nprobe: Number of clusters to probe during search
-            seed: Random seed for reproducibility
-        """
+
         self.vectors = vectors
         self.nlist = nlist
         self.nprobe = nprobe
         self.seed = seed
         
-        # Convert vectors to numpy array for processing
+        # Μετατροπη embeddings σε numpy array
         self.ids = list(vectors.keys())
-        self.data = np.array([vectors[pid] for pid in self.ids])
+        self.data = np.array([vectors[pid] for pid in self.ids])     # Διαστασιμοτητα embeddings
         self.dim = self.data.shape[1] if len(self.data.shape) > 1 else 1
         
-        # Initialize structures
-        self.centroids = None
-        self.cluster_assignments = None
-        self.cluster_members = None
+        self.centroids = None               # κεντρα clusters
+        self.cluster_assignments = None     # cluster id ανα vector
+        self.cluster_members = None         # indices vectors ανα cluster
         self.index_built = False
         
-        # Set random seed
+        # random seed
         np.random.seed(seed)
         random.seed(seed)
-        
+    
+    # Κατασκευη IVF index   
     def build_index(self):
-        """Build the IVF index by clustering the data."""
         print(f"Building IVF-Flat index with {self.nlist} clusters...")
         
-        # Step 1: Perform k-means clustering
+        # 1. k-means clustering
         kmeans = KMeans(n_clusters=self.nlist, random_state=self.seed, n_init=10)
-        self.cluster_assignments = kmeans.fit_predict(self.data)
-        self.centroids = kmeans.cluster_centers_
+        self.cluster_assignments = kmeans.fit_predict(self.data)            # cluster id για καθε vector
+        self.centroids = kmeans.cluster_centers_                 # centroids των clusters
         
-        # Step 2: Organize points by cluster
+        # 2. Δημιουργία inverted lists
         self.cluster_members = [[] for _ in range(self.nlist)]
         for idx, cluster_id in enumerate(self.cluster_assignments):
             self.cluster_members[cluster_id].append(idx)
         
         self.index_built = True
         print(f"IVF-Flat index built. Cluster sizes: {[len(c) for c in self.cluster_members[:5]]}...")
-        
+
+    # Ευκλειδεια αποσταση    
     def euclidean_distance(self, v1: np.ndarray, v2: np.ndarray) -> float:
-        """Compute Euclidean distance between two vectors."""
         return np.linalg.norm(v1 - v2)
     
+    # Ευρεση κοντινοτερων centroids
     def find_nearest_centroids(self, query: np.ndarray, nprobe_count: int = None) -> List[int]:
-        """Find nprobe_count nearest centroids to the query."""
         if nprobe_count is None:
             nprobe_count = self.nprobe
         
-        # Compute distances to all centroids
+        # Αποσταση query -> καθε centroid
         distances = []
         for i, centroid in enumerate(self.centroids):
             dist = self.euclidean_distance(query, centroid)
             distances.append((dist, i))
         
-        # Sort by distance and get top nprobe_count
+        # Ταξινομηση και επιλογη nprobe
         distances.sort(key=lambda x: x[0])
         return [idx for _, idx in distances[:nprobe_count]]
     
+    # Query k-NN
     def query(self, query_vec: np.ndarray, k: int = 10) -> List[Tuple[str, float]]:
-        """
-        Search for k nearest neighbors using IVF-Flat.
-        
-        Args:
-            query_vec: Query embedding vector
-            k: Number of neighbors to return
-            
-        Returns:
-            List of (protein_id, distance) tuples for k nearest neighbors
-        """
+      
         if not self.index_built:
             self.build_index()
         
-        # Step 1: Find nearest centroids
+        # 1. επιλογη clusters
         nearest_centroids = self.find_nearest_centroids(query_vec, self.nprobe)
         
-        # Step 2: Collect candidates from selected clusters
+        # 2. συλλογη υποψηφίων
         candidates = []
         for cluster_id in nearest_centroids:
             candidates.extend(self.cluster_members[cluster_id])
         
-        # Remove duplicates
+        # Αφαιρεση διπλοτυπων
         candidates = list(set(candidates))
         
-        # Step 3: Compute distances to candidates and find k nearest
+        # 3. ακριβης υπολογισμος αποστασεων
         distances = []
         for idx in candidates:
             dist = self.euclidean_distance(query_vec, self.data[idx])
             distances.append((dist, idx))
         
-        # Get k smallest distances
+        # k μικροτερες αποστασεις
         distances.sort(key=lambda x: x[0])
         top_k = distances[:k]
         
-        # Return results as (protein_id, distance)
+        #επιστροψη (protein_id, distance)
         return [(self.ids[idx], dist) for dist, idx in top_k]
     
+    # Range search
     def range_search(self, query_vec: np.ndarray, radius: float) -> List[Tuple[str, float]]:
-        """
-        Search for all neighbors within given radius.
-        
-        Args:
-            query_vec: Query embedding vector
-            radius: Search radius
-            
-        Returns:
-            List of (protein_id, distance) tuples within radius
-        """
+
         if not self.index_built:
             self.build_index()
         
-        # Step 1: Find nearest centroids
+        # 1. βρισκουμε κοντινοτερα centroids
         nearest_centroids = self.find_nearest_centroids(query_vec, self.nprobe)
         
-        # Step 2: Collect candidates from selected clusters
+        # 2. συλλογη υποψηφιων απο τα επιλεγμενα clusters
         candidates = []
         for cluster_id in nearest_centroids:
             candidates.extend(self.cluster_members[cluster_id])
         
-        # Remove duplicates
+        # Αφαιρεση διπλοτυπων
         candidates = list(set(candidates))
         
-        # Step 3: Find points within radius
         results = []
         for idx in candidates:
             dist = self.euclidean_distance(query_vec, self.data[idx])
             if dist <= radius:
                 results.append((self.ids[idx], dist))
-        
-        # Sort by distance
+    
         results.sort(key=lambda x: x[1])
         return results
     
+    # Silhouette score (ποιοτητα clustering)
     def compute_silhouette_score(self, sample_size: int = 100) -> float:
-        """Compute silhouette score for clustering quality (sampled)."""
         if not self.index_built:
             self.build_index()
         
-        # Use sampling for efficiency
         n_samples = min(sample_size, len(self.data))
         sample_indices = np.random.choice(len(self.data), n_samples, replace=False)
         
@@ -163,7 +135,7 @@ class IVFFlat:
             point = self.data[idx]
             cluster_id = self.cluster_assignments[idx]
             
-            # Calculate a_i (average distance to points in same cluster)
+            # a(i): μεση αποσταση στο ιδιο cluster
             same_cluster_indices = [i for i in self.cluster_members[cluster_id] if i != idx]
             
             if len(same_cluster_indices) == 0:
@@ -172,14 +144,13 @@ class IVFFlat:
             a_i = np.mean([self.euclidean_distance(point, self.data[i]) 
                           for i in same_cluster_indices])
             
-            # Calculate b_i (minimum average distance to other clusters)
+            # b(i): κοντινοτερο αλλο cluster
             b_i = float('inf')
             
             for other_cluster in range(self.nlist):
                 if other_cluster == cluster_id:
                     continue
                 
-                # Sample from other cluster for efficiency
                 other_indices = self.cluster_members[other_cluster]
                 if not other_indices:
                     continue
@@ -193,8 +164,7 @@ class IVFFlat:
             
             if b_i == float('inf'):
                 continue
-            
-            # Calculate silhouette for this point
+      
             if max(a_i, b_i) > 0:
                 silhouette = (b_i - a_i) / max(a_i, b_i)
                 total_silhouette += silhouette
@@ -202,8 +172,8 @@ class IVFFlat:
         
         return total_silhouette / valid_samples if valid_samples > 0 else 0.0
     
+    # Στατιστικα clusters
     def get_cluster_stats(self) -> Dict:
-        """Get statistics about the clusters."""
         if not self.index_built:
             self.build_index()
         
@@ -219,6 +189,7 @@ class IVFFlat:
             'empty_clusters': sum(1 for size in cluster_sizes if size == 0)
         }
     
+    # Αποθηκευση index
     def save_index(self, filepath: str):
         """Save the IVF index to disk."""
         import pickle
@@ -239,6 +210,7 @@ class IVFFlat:
         
         print(f"IVF index saved to {filepath}")
     
+    # Φορτωση index
     def load_index(self, filepath: str):
         """Load IVF index from disk."""
         import pickle
@@ -261,55 +233,41 @@ class IVFFlat:
         self.index_built = True
         print(f"IVF index loaded from {filepath}")
 
-
-# Function to create and return IVFFlat instance (for use in protein_search.py)
 def create_ivfflat_index(vectors: Dict[str, np.ndarray], nlist: int = 100, nprobe: int = 10) -> IVFFlat:
-    """
-    Helper function to create IVFFlat index.
-    
-    Args:
-        vectors: Dictionary mapping protein IDs to embeddings
-        nlist: Number of clusters
-        nprobe: Number of clusters to probe
-        
-    Returns:
-        IVFFlat instance with built index
-    """
+  
     ivf = IVFFlat(vectors, nlist=nlist, nprobe=nprobe)
     ivf.build_index()
     return ivf
 
 
-# Example usage
 if __name__ == "__main__":
-    # Example: Create synthetic data for testing
-    n_points = 1000
-    dim = 320
+   
+    n_points = 1000 # πληθος vectors
+    dim = 320   # διασταση embeddings 
     
-    # Create synthetic embeddings
+    # Δημιουργια τυχαιων embeddings
     vectors = {f"prot_{i}": np.random.randn(dim) for i in range(n_points)}
     
-    # Create IVF-Flat index
+    # Δημιουργια IVF-Flat index
     ivf = IVFFlat(vectors, nlist=50, nprobe=5)
-    ivf.build_index()
+    ivf.build_index()  # Κατασκευη του index 
     
-    # Get cluster statistics
+    # Εμφανιση στατιστικων για τα clusters
     stats = ivf.get_cluster_stats()
     print(f"Cluster stats: {stats}")
     
-    # Compute silhouette score
+    # Υπολογισμος silhouette score
     silhouette = ivf.compute_silhouette_score()
     print(f"Silhouette score: {silhouette:.4f}")
     
-    # Test query
+    # Δημιουργια τυχαιου query vector
     query_vec = np.random.randn(dim)
-    results = ivf.query(query_vec, k=5)
+    results = ivf.query(query_vec, k=5)  # αναζητηση k κοντινοτερων γειτονων (k-NN)
     
     print(f"\nTop 5 neighbors:")
     for i, (prot_id, dist) in enumerate(results):
         print(f"{i+1}. {prot_id}: distance = {dist:.4f}")
     
-    # Test range search
     radius = 10.0
     range_results = ivf.range_search(query_vec, radius)
     print(f"\nPoints within radius {radius}: {len(range_results)}")
