@@ -380,6 +380,7 @@ def load_embeddings_single_file(file_path):
     
     return embeddings, ids
 
+
 def main():
     parser = argparse.ArgumentParser(
         description="Εξαγωγή embeddings πρωτεϊνών με ESM-2 - Ένα ενιαίο αρχείο εξόδου"
