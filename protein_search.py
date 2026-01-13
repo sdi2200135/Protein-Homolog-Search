@@ -266,7 +266,7 @@ from ANN.euclidean_lsh import EuclideanLSH
 from Hypercube.hypercube import Hypercube
 from IVFFlat.ivfflat import IVFFlat
 from IVFPQ.ivfpq import IVFPQSearch
-# from Neural.neural_lsh import NeuralLSH
+from Neural.neural_lsh import NeuralLSH
 from protein_embed import load_embeddings_single_file 
 
 #Ορισμος και αναγνωση arguments απο τη γραμμη εντολων
@@ -296,6 +296,9 @@ def parse_args():
     parser.add_argument("--ivfpq_nprobe", type=int, default=10, help="IVFPQ: clusters to probe")
     parser.add_argument("--ivfpq_m", type=int, default=8, help="IVFPQ: subvectors")
     parser.add_argument("--neural_epochs", type=int, default=10, help="Neural LSH: epochs")
+    parser.add_argument("--neural_k", type=int, default=10, help="Neural LSH: k for k-NN graph")
+    parser.add_argument("--neural_m", type=int, default=100, help="Neural LSH: number of partitions")
+    parser.add_argument("--neural_T", type=int, default=5, help="Neural LSH: probes")
     
     # παραμετρος UniProt annotations (προαιρετικα)
     parser.add_argument("--uniprot_info", help="JSON file with UniProt annotations (optional)")
@@ -476,10 +479,16 @@ def initialize_methods(args, db_embeddings):
     if args.method in ["all", "neural"]:
         methods["Neural LSH"] = NeuralLSH(
             vectors=db_embeddings,
+            index_dir="neural_lsh_index",
+            rebuild=False,
+            k=args.neural_k,
+            m=args.neural_m,
+            T=args.neural_T,
             epochs=args.neural_epochs,
             seed=42
         )
-        print(f"Neural LSH initialized (epochs={args.neural_epochs})")
+        
+        print(f"Neural LSH initialized (k=10, m=100, T=5, epochs={args.neural_epochs})")
     
     return methods
 

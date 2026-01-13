@@ -58,3 +58,6 @@ python protein_search.py -d output.dat -q "data-query-sets&pfam-info/targets.fas
 # Αναζήτηση με IVFPQ
 python protein_search.py -d output.dat -q "data-query-sets&pfam-info/targets.fasta" -o results_ivfpq.txt -blast blast_results.txt 
 -method ivfpq --ivfpq_nlist 100 --ivfpq_nprobe 10 --ivfpq_m 8 -N 10 --recall_N 50
+
+# Αναζήτηση με Neural LSH
+python protein_search.py   -d output.dat   -q "data-query-sets&pfam-info/targets.fasta"   -o results_neural_m300.txt   -blast blast_results.txt   -method neural   --neural_epochs 20   --neural_k 20   --neural_m 300   --neural_T 10
