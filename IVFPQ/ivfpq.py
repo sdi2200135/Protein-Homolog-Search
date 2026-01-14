@@ -4,97 +4,10 @@ from typing import List, Tuple, Dict, Optional
 import heapq
 from sklearn.cluster import KMeans
 
-class KMeansClustering:
-    """Υλοποίηση του k-means για IVFPQ"""
-    
-    def __init__(self, n_clusters: int, max_iter: int = 100, tol: float = 1e-4, random_state: int = 42):
-        self.n_clusters = n_clusters
-        self.max_iter = max_iter
-        self.tol = tol
-        self.random_state = random_state
-        self.centroids = None
-        
-    def fit(self, X: np.ndarray) -> np.ndarray:
-        """Εκπαίδευση k-means"""
-        n_samples, n_features = X.shape
-        
-        # Αρχικοποίηση με k-means++
-        np.random.seed(self.random_state)
-        
-        # 1ο centroid τυχαίο
-        centroids = [X[np.random.randint(n_samples)]]
-        
-        for _ in range(1, self.n_clusters):
-            # Υπολογισμός αποστάσεων
-            distances = np.zeros(n_samples)
-            for i, x in enumerate(X):
-                min_dist = np.inf
-                for c in centroids:
-                    dist = np.sum((x - c) ** 2)
-                    min_dist = min(min_dist, dist)
-                distances[i] = min_dist
-            
-            # Επιλογή επόμενου centroid
-            probabilities = distances / distances.sum()
-            cumulative_probs = probabilities.cumsum()
-            r = np.random.rand()
-            next_idx = np.searchsorted(cumulative_probs, r)
-            centroids.append(X[next_idx])
-        
-        self.centroids = np.array(centroids)
-        
-        # Κύριος αλγόριθμος k-means
-        for iteration in range(self.max_iter):
-            # Αντιστοίχιση σημείων στα centroids
-            labels = np.argmin(np.sum((X[:, np.newaxis] - self.centroids) ** 2, axis=2), axis=1)
-            
-            # Ενημέρωση centroids
-            new_centroids = np.zeros_like(self.centroids)
-            for i in range(self.n_clusters):
-                cluster_points = X[labels == i]
-                if len(cluster_points) > 0:
-                    new_centroids[i] = cluster_points.mean(axis=0)
-                else:
-                    # Επαναρχικοποίηση κενού cluster
-                    new_centroids[i] = X[np.random.randint(n_samples)]
-            
-            # Έλεγχος σύγκλισης
-            centroid_shift = np.sqrt(np.sum((new_centroids - self.centroids) ** 2))
-            self.centroids = new_centroids
-            
-            if centroid_shift < self.tol:
-                break
-        
-        return self.centroids
-    
-    def predict(self, X: np.ndarray) -> np.ndarray:
-        """Πρόβλεψη labels για νέα δεδομένα"""
-        if self.centroids is None:
-            raise ValueError("Το μοντέλο δεν έχει εκπαιδευτεί!")
-        
-        distances = np.sum((X[:, np.newaxis] - self.centroids) ** 2, axis=2)
-        return np.argmin(distances, axis=1)
-
-
-class IVFPQ:
-    """Υλοποίηση του IVFPQ index για αναζήτηση σε διανύσματα πρωτεϊνών"""
-    
+# Υλοποίηση του IVFPQ index για αναζήτηση σε διανύσματα πρωτεϊνών
+class IVFPQ:    
     def __init__(self, n_clusters: int = 100, n_subvectors: int = 8, 
                  n_bits: int = 8, random_state: int = 42):
-        """
-        Αρχικοποίηση IVFPQ
-        
-        Παράμετροι:
-        -----------
-        n_clusters : int
-            Αριθμός clusters για το IVF
-        n_subvectors : int
-            Αριθμός υποδιανυσμάτων για Product Quantization (M)
-        n_bits : int
-            Αριθμός bits για κωδικοποίηση (2^n_bits centroids ανά υποχώρο)
-        random_state : int
-            Seed για αναπαραγωγιμότητα
-        """
         self.n_clusters = n_clusters
         self.M = n_subvectors
         self.n_bits = n_bits
@@ -102,75 +15,75 @@ class IVFPQ:
         self.n_pq_centroids = 1 << n_bits  # 2^n_bits
         
         # Αποθήκευση δεδομένων
-        self.ivf_centroids = None  # IVF centroids
-        self.inverted_lists = None  # Αναστραμμένες λίστες
-        self.pq_codebooks = None    # PQ codebooks
-        self.pq_codes = None        # Κωδικοποιημένα διανύσματα
-        self.vector_ids = None      # IDs διανυσμάτων
-        self.vector_dim = None      # Διάσταση διανυσμάτων
-        self.sub_dim = None         # Διάσταση υποδιανύσματος
+        self.ivf_centroids = None
+        self.inverted_lists = None
+        self.pq_codebooks = None
+        self.pq_codes = None
+        self.vector_ids = None
+        self.vector_dim = None
+        self.sub_dim = None
         
-        print(f"IVFPQ initialized: n_clusters={n_clusters}, "
-              f"M={n_subvectors}, n_bits={n_bits}")
+        print(f"IVFPQ initialized: n_clusters={n_clusters}, M={n_subvectors}, n_bits={n_bits}")
     
     def _compute_residual(self, vector: np.ndarray, centroid: np.ndarray) -> np.ndarray:
-        """Υπολογισμός υπολοίπου (διαφοράς από centroid)"""
         return vector - centroid
     
+    # Υπολογισμός Ευκλείδειας απόστασης 
     def _euclidean_distance(self, a: np.ndarray, b: np.ndarray) -> float:
-        """Υπολογισμός Ευκλείδειας απόστασης"""
-        return np.sqrt(np.sum((a - b) ** 2))
+        # Μετατροπή σε float arrays
+        a = np.asarray(a, dtype=np.float32)
+        b = np.asarray(b, dtype=np.float32)
+        return float(np.sqrt(np.sum((a - b) ** 2)))
     
     def _find_nearest_centroids(self, query: np.ndarray, n_probe: int) -> List[int]:
-        """Εύρεση n_probe πλησιέστερων centroids"""
         if self.ivf_centroids is None:
-            raise ValueError("Το index δεν έχει κατασκευαστεί!")
+            raise ValueError("Index not built!")
         
-        # Υπολογισμός αποστάσεων από όλα τα centroids
-        distances = np.sqrt(np.sum((self.ivf_centroids - query) ** 2, axis=1))
-        
-        # Επιλογή των n_probe πλησιέστερων
-        if n_probe >= self.n_clusters:
-            return list(range(self.n_clusters))
-        else:
-            return np.argsort(distances)[:n_probe].tolist()
+        distances = np.sum((self.ivf_centroids - query) ** 2, axis=1)
+        return np.argsort(distances)[:n_probe].tolist()
     
+    # Δημιουργία Look-Up Table 
     def _build_LUT(self, query_residual: np.ndarray) -> np.ndarray:
-        """
-        Δημιουργία Look-Up Table για γρήγορους υπολογισμούς
-        
-        Επιστρέφει πίνακα μεγέθους M x n_pq_centroids
-        """
         if self.pq_codebooks is None:
-            raise ValueError("Το index δεν έχει κατασκευαστεί!")
+            raise ValueError("Index not built!")
         
-        LUT = np.zeros((self.M, self.n_pq_centroids))
+        # Δημιουργία LUT με float dtype
+        LUT = np.zeros((self.M, self.n_pq_centroids), dtype=np.float32)
+        
+        # Βεβαιωθείτε ότι το query_residual είναι float array
+        query_residual = np.asarray(query_residual, dtype=np.float32)
         
         for m in range(self.M):
-            # Εξαγωγή υποδιανύσματος από το query
             start_idx = m * self.sub_dim
             end_idx = start_idx + self.sub_dim
+            
+            # Βεβαιωθείτε για τα όρια
+            if start_idx >= len(query_residual):
+                break
+                
+            end_idx = min(end_idx, len(query_residual))
             sub_query = query_residual[start_idx:end_idx]
             
-            # Υπολογισμός αποστάσεων από όλα τα PQ centroids
-            for c in range(self.n_pq_centroids):
-                LUT[m, c] = self._euclidean_distance(sub_query, self.pq_codebooks[m][c])
+            # Αν το sub_query είναι μικρότερο από sub_dim, κάντε padding
+            if len(sub_query) < self.sub_dim:
+                padded = np.zeros(self.sub_dim, dtype=np.float32)
+                padded[:len(sub_query)] = sub_query
+                sub_query = padded
+            
+            # Βεβαιωθείτε ότι το codebook είναι float array
+            codebook = np.asarray(self.pq_codebooks[m], dtype=np.float32)
+            
+            # Υπολογισμός αποστάσεων
+            for c in range(min(len(codebook), self.n_pq_centroids)):
+                LUT[m, c] = float(np.sqrt(np.sum((sub_query - codebook[c]) ** 2)))
         
         return LUT
     
+    # Κατασκευή IVFPQ index
     def build(self, vectors: Dict[str, np.ndarray]):
-        """
-        Κατασκευή IVFPQ index
-        
-        Παράμετροι:
-        -----------
-        vectors : Dict[str, np.ndarray]
-            Λεξικό με ID διανυσμάτων ως κλειδιά και διανύσματα ως τιμές
-        """
         if not vectors:
-            raise ValueError("Η λίστα διανυσμάτων είναι κενή!")
+            raise ValueError("Empty vectors!")
         
-        # Μετατροπή σε πίνακα και αποθήκευση IDs
         self.vector_ids = list(vectors.keys())
         vector_list = list(vectors.values())
         X = np.array(vector_list)
@@ -180,19 +93,36 @@ class IVFPQ:
         
         # Έλεγχος ότι η διάσταση διαιρείται με M
         if self.vector_dim % self.M != 0:
-            raise ValueError(f"Διάσταση {self.vector_dim} δεν διαιρείται με M={self.M}!")
+            # Αντί για error, προσαρμόζουμε το M
+            # Βρες τον μεγαλύτερο κοινό διαιρέτη
+            possible_M = []
+            for m in [1, 2, 4, 8, 16, 32, 64]:
+                if self.vector_dim % m == 0:
+                    possible_M.append(m)
+            
+            if possible_M:
+                new_M = max(possible_M)
+                print(f"Warning: Dimension {self.vector_dim} not divisible by M={self.M}. Using M={new_M} instead.")
+                self.M = new_M
+            else:
+                raise ValueError(f"Dimension {self.vector_dim} has no common divisor with typical M values!")
         
         self.sub_dim = self.vector_dim // self.M
         
         # 1. IVF Clustering
         print("Step 1: IVF clustering...")
+        actual_n_clusters = min(self.n_clusters, n_vectors // 10)
+        if actual_n_clusters < 2:
+            actual_n_clusters = 2
+        
         kmeans_ivf = KMeans(
-            n_clusters=self.n_clusters,
+            n_clusters=actual_n_clusters,
             random_state=self.random_state,
-            n_init=10
+            n_init=3  # Μείωσε για ταχύτητα
         )
         ivf_labels = kmeans_ivf.fit_predict(X)
         self.ivf_centroids = kmeans_ivf.cluster_centers_
+        self.n_clusters = actual_n_clusters  # Ενημέρωσε το πραγματικό αριθμό
         
         # 2. Δημιουργία αναστραμμένων λιστών
         print("Step 2: Creating inverted lists...")
@@ -205,34 +135,50 @@ class IVFPQ:
         residuals = np.zeros_like(X)
         for idx in range(n_vectors):
             centroid_idx = ivf_labels[idx]
-            residuals[idx] = self._compute_residual(X[idx], self.ivf_centroids[centroid_idx])
+            residuals[idx] = X[idx] - self.ivf_centroids[centroid_idx]
         
-        # 4. Product Quantization Training
+        # 4. Product Quantization Training - ΔΙΟΡΘΩΜΕΝΟ
         print(f"Step 4: PQ training with M={self.M} subspaces...")
         self.pq_codebooks = []
         
         for m in range(self.M):
-            # Εξαγωγή υποδιανυσμάτων
             start_idx = m * self.sub_dim
             end_idx = start_idx + self.sub_dim
             subspace_data = residuals[:, start_idx:end_idx]
+    
+            if self.sub_dim < 4:
+                print(f"Warning: sub_dim={self.sub_dim} is too small. Adjusting M...")
+               
+                self.M = self.vector_dim // 4
+                self.sub_dim = 4
+                print(f"New M: {self.M}, new sub_dim: {self.sub_dim}")
+            elif self.sub_dim < 10:
+          
+                actual_pq_centroids = 16
+            elif self.sub_dim < 20:
+           
+                actual_pq_centroids = 64
+            else:
+       
+                actual_pq_centroids = 256
             
-            # Κάθε subspace έχει 2^n_bits centroids
-            n_pq_clusters = min(self.n_pq_centroids, len(subspace_data))
+            actual_pq_centroids = min(actual_pq_centroids, len(subspace_data))
             
-            if len(subspace_data) >= n_pq_clusters:
+            if len(subspace_data) >= actual_pq_centroids:
                 kmeans_pq = KMeans(
-                    n_clusters=n_pq_clusters,
+                    n_clusters=actual_pq_centroids,
                     random_state=self.random_state + m,
-                    n_init=3
+                    n_init=2
                 )
                 kmeans_pq.fit(subspace_data)
                 codebook = kmeans_pq.cluster_centers_
-            else:
-                # Αν δεν έχουμε αρκετά δεδομένα, χρησιμοποιούμε τυχαία σημεία
-                codebook = subspace_data[np.random.choice(len(subspace_data), n_pq_clusters, replace=True)]
+            else:   
+                idxs = np.random.choice(len(subspace_data), actual_pq_centroids, replace=True)
+                codebook = subspace_data[idxs] + np.random.randn(actual_pq_centroids, self.sub_dim) * 0.01
             
-            self.pq_codebooks.append(codebook)
+            full_codebook = np.zeros((self.n_pq_centroids, self.sub_dim))
+            full_codebook[:actual_pq_centroids] = codebook
+            self.pq_codebooks.append(full_codebook)
         
         # 5. Κωδικοποίηση διανυσμάτων
         print("Step 5: Encoding vectors...")
@@ -247,33 +193,21 @@ class IVFPQ:
                 end_idx = start_idx + self.sub_dim
                 subvector = residual[start_idx:end_idx]
                 
-                # Εύρεση πλησιέστερου centroid
-                distances = np.sqrt(np.sum((self.pq_codebooks[m] - subvector) ** 2, axis=1))
+                # Χρησιμοποιούμε μόνο τους πραγματικούς centroids
+                codebook = self.pq_codebooks[m][:actual_pq_centroids]
+                distances = np.sum((codebook - subvector) ** 2, axis=1)
                 best_code = np.argmin(distances)
                 self.pq_codes[idx, m] = best_code
         
         print(f"IVFPQ index built successfully! {n_vectors} vectors encoded.")
+        print(f"Final parameters: n_clusters={self.n_clusters}, M={self.M}, sub_dim={self.sub_dim}")
     
+    # Αναζήτηση
     def query(self, query_vector: np.ndarray, k: int = 10, n_probe: int = 10) -> List[Tuple[str, float]]:
-        """
-        Αναζήτηση k πλησιέστερων γειτόνων
-        
-        Παράμετροι:
-        -----------
-        query_vector : np.ndarray
-            Διάνυσμα ερώτημα
-        k : int
-            Αριθμός πλησιέστερων γειτόνων
-        n_probe : int
-            Αριθμός clusters για έλεγχο
-        
-        Επιστρέφει:
-        -----------
-        List[Tuple[str, float]]
-            Λίστα με (ID γείτονα, απόσταση)
-        """
         if self.ivf_centroids is None or self.pq_codebooks is None:
-            raise ValueError("Το index δεν έχει κατασκευαστεί!")
+            raise ValueError("Index not built!")
+         
+        query_vector = np.asarray(query_vector, dtype=np.float32)
         
         # 1. Εύρεση πλησιέστερων centroids
         nearest_centroids = self._find_nearest_centroids(query_vector, n_probe)
@@ -282,98 +216,50 @@ class IVFPQ:
         candidates = []
         
         for centroid_idx in nearest_centroids:
-            # Υπολογισμός residual
             centroid = self.ivf_centroids[centroid_idx]
-            query_residual = self._compute_residual(query_vector, centroid)
+            query_residual = query_vector - centroid
             
             # Δημιουργία LUT
             LUT = self._build_LUT(query_residual)
             
-            # Έλεγχος όλων των διανυσμάτων στο cluster
+            # Έλεγχος διανυσμάτων στο cluster
             for vector_idx in self.inverted_lists[centroid_idx]:
-                # Υπολογισμός απόστασης χρησιμοποιώντας LUT
-                dist = 0.0
+                # Υπολογισμός απόστασης
+                dist_sq = 0.0
                 for m in range(self.M):
-                    code = self.pq_codes[vector_idx, m]
-                    dist += LUT[m, code] ** 2  # Χρήση τετραγωνικής απόστασης
+                    code = int(self.pq_codes[vector_idx, m])  
+                    dist_sq += float(LUT[m, code]) ** 2
                 
-                dist = np.sqrt(dist)  # Μετατροπή σε Ευκλείδεια απόσταση
+                dist = float(np.sqrt(dist_sq))
                 vector_id = self.vector_ids[vector_idx]
                 candidates.append((dist, vector_id))
         
-        # 3. Ταξινόμηση και επιστροφή των k πλησιέστερων
-        candidates.sort(key=lambda x: x[0])
-        return candidates[:k]
-    
-    def query_batch(self, query_vectors: Dict[str, np.ndarray], k: int = 10, 
-                    n_probe: int = 10) -> Dict[str, List[Tuple[str, float]]]:
-        """
-        Αναζήτηση για πολλαπλά ερωτήματα
-        
-        Παράμετροι:
-        -----------
-        query_vectors : Dict[str, np.ndarray]
-            Λεξικό με ερωτήματα
-        k : int
-            Αριθμός πλησιέστερων γειτόνων
-        n_probe : int
-            Αριθμός clusters για έλεγχο
-        
-        Επιστρέφει:
-        -----------
-        Dict[str, List[Tuple[str, float]]]
-            Αποτελέσματα για κάθε ερώτημα
-        """
-        results = {}
-        for query_id, query_vector in query_vectors.items():
-            results[query_id] = self.query(query_vector, k, n_probe)
-        
-        return results
-    
-    def get_statistics(self) -> Dict:
-        """Επιστροφή στατιστικών για το index"""
-        if self.inverted_lists is None:
-            return {}
-        
-        cluster_sizes = [len(lst) for lst in self.inverted_lists]
-        
-        return {
-            'n_vectors': len(self.vector_ids) if self.vector_ids else 0,
-            'n_clusters': self.n_clusters,
-            'vector_dim': self.vector_dim,
-            'sub_dim': self.sub_dim,
-            'n_pq_centroids': self.n_pq_centroids,
-            'cluster_sizes': {
-                'min': min(cluster_sizes) if cluster_sizes else 0,
-                'max': max(cluster_sizes) if cluster_sizes else 0,
-                'avg': np.mean(cluster_sizes) if cluster_sizes else 0,
-                'std': np.std(cluster_sizes) if cluster_sizes else 0
-            }
-        }
+        # Ταξινόμηση και επιστροφή
+        candidates.sort(key=lambda x: float(x[0]))  
+        return [(id_, float(dist)) for dist, id_ in candidates[:k]]  # Επιστροφή ως floats
 
-
-# Κλάση συμβατή με το protein_search.py
+# Wrapper κλάση για χρήση στο protein_search.py
 class IVFPQSearch:
-    """Wrapper κλάση για χρήση στο protein_search.py"""
     
-    def __init__(self, vectors: Dict[str, np.ndarray], nlist: int = 100, 
-                 nprobe: int = 10, m: int = 8, seed: int = 42):
-        """
-        Αρχικοποίηση
+    def __init__(self, vectors: Dict[str, np.ndarray], nlist: int = 100, nprobe: int = 10, m: int = 8, seed: int = 42):
+        embedding_dim = list(vectors.values())[0].shape[0]
         
-        Παράμετροι:
-        -----------
-        vectors : Dict[str, np.ndarray]
-            Διανύσματα βάσης δεδομένων
-        nlist : int
-            Αριθμός clusters (IVF)
-        nprobe : int
-            Αριθμός clusters για έλεγχο
-        m : int
-            Αριθμός υποδιανυσμάτων (M)
-        seed : int
-            Seed για αναπαραγωγιμότητα
-        """
+        # Βρες κατάλληλο m αν το δοσμένο δεν διαιρεί
+        if embedding_dim % m != 0:
+            print(f"Warning: Embedding dimension {embedding_dim} not divisible by m={m}")
+            # Βρες τον μεγαλύτερο διαιρέτη που είναι <= m
+            divisors = []
+            for d in range(1, min(m, embedding_dim) + 1):
+                if embedding_dim % d == 0:
+                    divisors.append(d)
+            
+            if divisors:
+                m = max(divisors)
+                print(f"Using m={m} instead")
+            else:
+                m = 1
+                print(f"Using m={m} as fallback")
+        
         self.nlist = nlist
         self.nprobe = nprobe
         self.m = m
@@ -383,7 +269,7 @@ class IVFPQSearch:
         self.index = IVFPQ(
             n_clusters=nlist,
             n_subvectors=m,
-            n_bits=8,  # Προκαθορισμένο
+            n_bits=8,  # Χρησιμοποιούμε 8 bits (256 centroids)
             random_state=seed
         )
         
@@ -393,23 +279,7 @@ class IVFPQSearch:
         print(f"IVF-PQ initialized (nlist={nlist}, m={m})")
     
     def query(self, query_vector: np.ndarray, k: int) -> List[Tuple[str, float]]:
-        """
-        Αναζήτηση k πλησιέστερων γειτόνων
-        
-        Παράμετροι:
-        -----------
-        query_vector : np.ndarray
-            Διάνυσμα ερώτημα
-        k : int
-            Αριθμός πλησιέστερων γειτόνων
-        
-        Επιστρέφει:
-        -----------
-        List[Tuple[str, float]]
-            Λίστα με (ID γείτονα, απόσταση)
-        """
         return self.index.query(query_vector, k=k, n_probe=self.nprobe)
     
     def get_stats(self) -> Dict:
-        """Επιστροφή στατιστικών"""
         return self.index.get_statistics()
