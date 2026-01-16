@@ -111,13 +111,13 @@
 
 
 ## Δομή Αποτελεσμάτων
-[1] Συνοπτική σύγκριση μεθόδων
-Method            | Time/query (s) | QPS     | Recall@N vs BLAST Top-N
-Euclidean LSH     | 0.020          | 50.0    | 0.92
-Hypercube         | 0.030          | 33.3    | 0.88
-Neural LSH        | 0.010          | 100.0   | 0.95
-IVF-Flat          | 0.008          | 125.0   | 0.93
-IVF-PQ            | 0.005          | 200.0   | 0.90
+    [1] Συνοπτική σύγκριση μεθόδων
+    Method            | Time/query (s) | QPS     | Recall@N vs BLAST Top-N
+    Euclidean LSH     | 0.020          | 50.0    | 0.92
+    Hypercube         | 0.030          | 33.3    | 0.88
+    Neural LSH        | 0.010          | 100.0   | 0.95
+    IVF-Flat          | 0.008          | 125.0   | 0.93
+    IVF-PQ            | 0.005          | 200.0   | 0.90
 
 # Αναλυτικοί Γείτονες
 [2] Top-10 γείτονες ανά μέθοδο
