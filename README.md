@@ -26,19 +26,10 @@
 **protein_embed.py**: Μετατροπή πρωτεϊνικών ακολουθιών σε embeddings με ESM-2
 **protein_search.py**: Σύγκριση των 5 μεθόδων ANN και αξιολόγηση με βάση τα αποτελέσματα BLAST
 
-Κύρια βήματα αλγορίθμου:
-1. Κατασκευή γράφου k-NN από το σύνολο δεδομένων
-2. Μετατροπή σε μη κατευθυνόμενο ζυγισμένο γράφο
-3. Ισοκατανεμημένη διαμέριση KaHIP σε m μέρη
-4. Εκπαίδευση MLP ταξινομητή για πρόβλεψη partition labels 
-5. Αποθήκευση ευρετηρίου (μοντέλο + inverted file)
-6. Αναζήτηση με multi-probe τεχνική
-
-
 ## Κατάλογος Αρχείων
 ## Κύρια Προγράμματα
 
-1. **protein_embed.py** : Μετατροπή FASTA αρχείων σε ESM-2 embeddings
+1. **protein_embed.py**  : Μετατροπή FASTA αρχείων σε ESM-2 embeddings
 2. **protein_search.py** : Αναζήτηση και αξιολόγηση με 5 μεθόδους ANN
 
 ### Μέθοδοι Αναζήτησης 
@@ -55,18 +46,7 @@
 **blast_results.txt** : Αποτελέσματα BLAST για αξιολόγηση
 
 
-### Βοηθητικά modules -> **knn_graph/**
-1. **ANN/euclidean_lsh.py**   :
-2. **Hypercube/hypercube.py**    : 
-3. **IVFFlat/ivfflat.py**   :
-4. **IVFPQ/ivfpq.py**   :
-5. **Neural/neural_lsh.py** : 
-           **/graph_tools**:
-
-
-
 ## Οδηγίες Εγκατάστασης
-
 # Δημιουργία και ενεργοποίηση virtual environment
     python3 -m venv venv
     source venv/bin/activate
@@ -143,16 +123,3 @@
 Για να εκτελέσουμε μόνο τη φάση της αναζήτησης για το MNIST χρησιμοποιούμε την εντολή **make search_mnist**.
 Για να διαγράψουμε τα παραγόμενα αρχεία χρησιμοποιούμε την εντολή **make clean_all**.
 Για να εμφανίσουμε όλες τις διαθέσιμες εντολές του Makefile χρησιμοποιούμε την εντολή **make help**
-
-
-
-## Απαιτήσεις Συστήματος
-1. **Python 3.8+** με pip package manager
-2. **PyTorch (>= 1.9.0)** για νευρωνικά δίκτυα
-3. **KaHIP Python** bindings για διαμέριση γράφων
-4. **NumPy, SciPy, scikit-learn** για επεξεργασία δεδομένων
-5. **Matplotlib, Seaborn** για οπτικοποίηση
-6. Επαρκής μνήμη **RAM** (16GB+ για μεγάλα datasets)
-7. Προαιρετικά: **CUDA-enabled GPU** για επιτάχυνση εκπαίδευσης
-
-pip install -r requirements.txt
