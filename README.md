@@ -149,7 +149,6 @@
     make clean
 
 ## Απαιτήσεις Συστήματος
-
 1. Python 3.10+ με pip package manager
 2. PyTorch 2.0+ για ESM-2 embeddings
 3. CUDA-capable GPU (προτεινόμενο) για επιτάχυνση
@@ -162,8 +161,8 @@
 10. Multi-core CPU για παράλληλη επεξεργασία
 
 # Εγκατάσταση με Conda 
-conda create -n protein_search python=3.11
-conda activate protein_search
-conda install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia
-conda install numpy scipy pandas scikit-learn biopython tqdm
-pip install fair-esm
+1. conda create -n protein_search python=3.11
+2. conda activate protein_search
+3. conda install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia
+4. conda install numpy scipy pandas scikit-learn biopython tqdm
+5. pip install fair-esm
