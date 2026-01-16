@@ -41,19 +41,13 @@
 1. **protein_embed.py** : Μετατροπή FASTA αρχείων σε ESM-2 embeddings
 2. **protein_search.py** : Αναζήτηση και αξιολόγηση με 5 μεθόδους ANN
 
-## ANN Μέθοδοι
-Euclidean LSH
-**euclidean_lsh.py** : LSH με Ευκλείδειες αποστάσεις και multi-probe
-
-Hypercube
-**hypercube.py** :Προβολή σε υπερκύβο με Hamming απόσταση
-
-IVF Μέθοδοι
-**ivfflat.py** :IVF με ακριβείς αποστάσεις και K-means clustering
-**ivfpq.py** :IVF με Product Quantization για συμπίεση
-
-Neural LSH
-**neural_lsh.py** :Υβριδική μέθοδος με MLP και partitioning
+### Μέθοδοι Αναζήτησης 
+1. **ANN/euclidean_lsh.py**   : LSH με Ευκλείδειες αποστάσεις και multi-probe
+2. **Hypercube/hypercube.py** : Προβολή σε υπερκύβο με Hamming απόσταση
+3. **IVFFlat/ivfflat.py**     : IVF με ακριβείς αποστάσεις και K-means clustering
+4. **IVFPQ/ivfpq.py**         : IVF με Product Quantization για συμπίεση
+5. **Neural/neural_lsh.py**   : Υβριδική μέθοδος με MLP και partitioning
+6. **Neural/graph_tools**     : Βοηθητικά αρχεία για την υλοποίηση του Neural LSH
 
 ## Αρχεία Δεδομένων (παραδείγματα)
 **swissprot.fasta** : Βάση δεδομένων πρωτεϊνών
@@ -88,16 +82,53 @@ Neural LSH
 
 
 ## Οδηγίες Χρήσης
-# Σενάριο 1: Κατασκευή Ευρετηρίου (Build)
-python nlsh_build.py -d <input_file> -i <index_path> -type <sift|mnist>
+# Βήμα 1: Παραγωγή Embeddings
+    python protein_embed.py -i swissprot.fasta -o protein_vectors.dat \ --model esm2_t6_8M_UR50D --batch-size 16
 
-# Σενάριο 2: Αναζήτηση (Search)
-python nlsh_search.py -d <dataset> -q <query_file> -i <index_path> -o <output_file> -type <sift|mnist>
+    Παράμετροι:
 
-## Συμβατότητα με 1η Εργασία
-1. Χρησιμοποιούνται τα ίδια datasets (MNIST, SIFT)
-2. Η ίδια μορφή αρχείων εισόδου/εξόδου
-3. Δυνατότητα άμεσης σύγκρισης με LSH, Hypercube, IVFFlat, IVFPQ
+    -i: Είσοδος FASTA αρχείο
+
+    -o: Έξοδος δυαδικό αρχείο embeddings
+
+    --model: Προεκπαιδευμένο μοντέλο ESM-2
+
+    --batch-size: Μέγεθος batch για επεξεργασία
+
+# Βήμα 2: Αναζήτηση και Αξιολόγηση
+    python protein_search.py -d protein_vectors.dat -q targets.fasta \ -blast blast_results.txt -o results.txt -method all \ --recall_N 50 --N 10
+    
+    Παράμετροι:
+
+    -d: Αρχείο embeddings βάσης δεδομένων
+
+    -q: Query FASTA αρχείο
+
+    -blast: Αποτελέσματα BLAST για αξιολόγηση
+
+    -o: Αρχείο εξόδου με αποτελέσματα
+
+    -method: Μέθοδος ANN (all, lsh, hypercube, neural, ivfflat, ivfpq)
+
+    --recall_N: N για υπολογισμό Recall@N
+
+    --N: Αριθμός γειτόνων για εμφάνιση
+
+# Βήμα 3: Τρέξιμο Μεθόδων
+# Euclidean LSH
+    python protein_search.py -method lsh --lsh_k 10 --lsh_L 5 --lsh_w 4.0
+
+# Hypercube
+    python protein_search.py -method hypercube --hypercube_k 10 --hypercube_M 1000
+
+# IVF-Flat
+    python protein_search.py -method ivfflat --ivfflat_nlist 100 --ivfflat_nprobe 10
+
+# IVF-PQ
+    python protein_search.py -method ivfpq --ivfpq_nlist 100 --ivfpq_m 8
+
+# Neural LSH
+    python protein_search.py -method neural --neural_epochs 10 --neural_k 10
 
 
 ## Οδηγίες Μεταγλώττισης και Εκτέλεσης
