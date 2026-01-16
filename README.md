@@ -26,7 +26,7 @@
     **protein_search.py**: Σύγκριση των 5 μεθόδων ANN και αξιολόγηση με βάση τα αποτελέσματα BLAST
 
 ## Κατάλογος Αρχείων
-## Κύρια Προγράμματα
+### Κύρια Προγράμματα
 
 1. **protein_embed.py**  : Μετατροπή FASTA αρχείων σε ESM-2 embeddings
 2. **protein_search.py** : Αναζήτηση και αξιολόγηση με 5 μεθόδους ANN
@@ -39,29 +39,29 @@
 5. **Neural/neural_lsh.py**   : Υβριδική μέθοδος με MLP και partitioning
 6. **Neural/graph_tools**     : Βοηθητικά αρχεία για την υλοποίηση του Neural LSH
 
-## Αρχεία Δεδομένων (παραδείγματα)
+### Αρχεία Δεδομένων (παραδείγματα)
 **swissprot.fasta** : Βάση δεδομένων πρωτεϊνών
 **targets.fasta** : Πρωτεΐνες-στόχοι για αναζήτηση
 **blast_results.txt** : Αποτελέσματα BLAST για αξιολόγηση
 
 
 ## Οδηγίες Εγκατάστασης
-# Δημιουργία και ενεργοποίηση virtual environment
+### Δημιουργία και ενεργοποίηση virtual environment
     python3 -m venv venv
     source venv/bin/activate
-# Εγκατάσταση βασικών εξαρτήσεων
+### Εγκατάσταση βασικών εξαρτήσεων
     pip install torch numpy biopython tqdm scikit-learn pandas
     pip install fair-esm  # ESM-2 μοντέλο
     pip install -r requirements.txt  # Όλες οι εξαρτήσεις
-# Εγκατάσταση KaHIP για διαμέριση γράφων
+### Εγκατάσταση KaHIP για διαμέριση γράφων
     pip install kahip
-# Εγκατάσταση ESM-2 Μοντέλου
+### Εγκατάσταση ESM-2 Μοντέλου
     python -c "import esm; print('ESM εγκατεστημένο')"
 
 
 
 ## Οδηγίες Χρήσης
-# Βήμα 1: Παραγωγή Embeddings
+### Βήμα 1: Παραγωγή Embeddings
     python protein_embed.py -i swissprot.fasta -o protein_vectors.dat \ --model esm2_t6_8M_UR50D --batch-size 16
 
     Παράμετροι:
@@ -74,7 +74,7 @@
 
     --batch-size: Μέγεθος batch για επεξεργασία
 
-# Βήμα 2: Αναζήτηση και Αξιολόγηση
+### Βήμα 2: Αναζήτηση και Αξιολόγηση
     python protein_search.py -d protein_vectors.dat -q targets.fasta \ -blast blast_results.txt -o results.txt -method all \ --recall_N 50 --N 10
     
     Παράμετροι:
@@ -93,20 +93,20 @@
 
     --N: Αριθμός γειτόνων για εμφάνιση
 
-# Βήμα 3: Τρέξιμο Μεθόδων
-# Euclidean LSH
+### Βήμα 3: Τρέξιμο Μεθόδων
+#### Euclidean LSH
     python protein_search.py -method lsh --lsh_k 10 --lsh_L 5 --lsh_w 4.0
 
-# Hypercube
+#### Hypercube
     python protein_search.py -method hypercube --hypercube_k 10 --hypercube_M 1000
 
-# IVF-Flat
+#### IVF-Flat
     python protein_search.py -method ivfflat --ivfflat_nlist 100 --ivfflat_nprobe 10
 
-# IVF-PQ
+#### IVF-PQ
     python protein_search.py -method ivfpq --ivfpq_nlist 100 --ivfpq_m 8
 
-# Neural LSH
+#### Neural LSH
     python protein_search.py -method neural --neural_epochs 10 --neural_k 10
 
 
@@ -119,33 +119,33 @@
     IVF-Flat          | 0.008          | 125.0   | 0.93
     IVF-PQ            | 0.005          | 200.0   | 0.90
 
-# Αναλυτικοί Γείτονες
+## Αναλυτικοί Γείτονες
     [2] Top-10 γείτονες ανά μέθοδο
     Method: Euclidean LSH
     Rank | Neighbor ID | L2 Dist | BLAST Identity | In BLAST Top-N? | Bio comment
     1    | P14181      | 1.685   | 0.0%           | No              | REMOTE HOMOLOG CANDIDATE (0.0%)
 
 ## Οδηγίες Μεταγλώττισης και Εκτέλεσης
-# Πλήρης Εκτέλεση
+### Πλήρης Εκτέλεση
     make all
-# Για Παραγωγή Embedings
+### Για Παραγωγή Embedings
     make embeddings
-# Για BLAST
+### Για BLAST
     1. make blast
     2. make blast-search
-# Για LSH Search
+### Για LSH Search
     make lsh
-# Για  Hypercube Search
+### Για  Hypercube Search
     make hypercube
-# Για IVFFlat Search
+### Για IVFFlat Search
     make ivfflat
-# Για IVFPQ Search
+### Για IVFPQ Search
     make ivfpq
-# Για Neural LSH Search
+### Για Neural LSH Search
     make neural
-# Για όλες τις μεθοδους 
+### Για όλες τις μεθοδους 
     make ann-methods
-# Διαγραφή παραγόμενων αρχείων
+### Διαγραφή παραγόμενων αρχείων
     make clean
 
 ## Απαιτήσεις Συστήματος
@@ -160,7 +160,7 @@
 9. SSD/NVMe για γρήγορη ανάγνωση δεδομένων
 10. Multi-core CPU για παράλληλη επεξεργασία
 
-# Εγκατάσταση με Conda 
+## Εγκατάσταση με Conda 
 1. conda create -n protein_search python=3.11
 2. conda activate protein_search
 3. conda install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia
