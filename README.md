@@ -143,6 +143,8 @@ make all
     make neural
 # Για όλες τις μεθοδους 
 make ann-methods
+# Διαγραφή παραγόμενων αρχείων
+make clean
 
 ## Απαιτήσεις Συστήματος
 
