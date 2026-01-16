@@ -37,8 +37,29 @@
 
 ## Κατάλογος Αρχείων
 ## Κύρια Προγράμματα
-1. **nlsh_build.py**  : κατασκευή ευρετηρίου Neural LSH
-2. **nlsh_search.py** : αναζήτηση με Neural LSH
+
+1. **protein_embed.py** : Μετατροπή FASTA αρχείων σε ESM-2 embeddings
+2. **protein_search.py** : Αναζήτηση και αξιολόγηση με 5 μεθόδους ANN
+
+## ANN Μέθοδοι
+Euclidean LSH
+**euclidean_lsh.py** : LSH με Ευκλείδειες αποστάσεις και multi-probe
+
+Hypercube
+**hypercube.py** :Προβολή σε υπερκύβο με Hamming απόσταση
+
+IVF Μέθοδοι
+**ivfflat.py** :IVF με ακριβείς αποστάσεις και K-means clustering
+**ivfpq.py** :IVF με Product Quantization για συμπίεση
+
+Neural LSH
+**neural_lsh.py** :Υβριδική μέθοδος με MLP και partitioning
+
+## Αρχεία Δεδομένων (παραδείγματα)
+**swissprot.fasta** : Βάση δεδομένων πρωτεϊνών
+**targets.fasta** : Πρωτεΐνες-στόχοι για αναζήτηση
+**blast_results.txt** : Αποτελέσματα BLAST για αξιολόγηση
+
 
 ### Βοηθητικά modules -> **knn_graph/**
 
