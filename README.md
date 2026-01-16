@@ -127,7 +127,7 @@ Rank | Neighbor ID | L2 Dist | BLAST Identity | In BLAST Top-N? | Bio comment
 
 ## Οδηγίες Μεταγλώττισης και Εκτέλεσης
 # Πλήρης Εκτέλεση
-make all
+    make all
 # Για Παραγωγή Embedings
     make embeddings
 # Για BLAST
@@ -144,9 +144,9 @@ make all
 # Για Neural LSH Search
     make neural
 # Για όλες τις μεθοδους 
-make ann-methods
+    make ann-methods
 # Διαγραφή παραγόμενων αρχείων
-make clean
+    make clean
 
 ## Απαιτήσεις Συστήματος
 
