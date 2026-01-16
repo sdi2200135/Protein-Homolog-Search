@@ -127,14 +127,24 @@ Rank | Neighbor ID | L2 Dist | BLAST Identity | In BLAST Top-N? | Bio comment
 1    | P14181      | 1.685   | 0.0%           | No              | REMOTE HOMOLOG CANDIDATE (0.0%)
 
 ## Οδηγίες Μεταγλώττισης και Εκτέλεσης
-Αρχικά, για την εγκατάσταση των απαραίτητων βιβλιοθηκών εκτελούμε την εντολή **make setup**.
-Στη συνέχεια, για να εκτελέσουμε πλήρως τον αλγόριθμο Neural LSH για το SIFT dataset χρησιμοποιούμε την εντολή **make run_sift**.
-Αν θέλουμε να εκτελέσουμε πλήρως τον αλγόριθμο Neural LSH για το MNIST dataset χρησιμοποιούμε την εντολή **make run_mnist**.
-Για να εκτελέσουμε την πειραματική ανάλυση με τις ακριβείς παραμέτρους από την εκφώνηση για το SIFT, χρησιμοποιούμε την εντολή **make run_exact_sift**.
-Για να εκτελέσουμε την πειραματική ανάλυση με τις ακριβείς παραμέτρους από την εκφώνηση για το MNIST, χρησιμοποιούμε την εντολή **make run_exact_mnist**.
-Για να εκτελέσουμε μόνο τη φάση της κατασκευής του ευρετηρίου για το SIFT χρησιμοποιούμε την εντολή **make build_sift**.
-Για να εκτελέσουμε μόνο τη φάση της αναζήτησης για το SIFT χρησιμοποιούμε την εντολή **make search_sift**.
-Για να εκτελέσουμε μόνο τη φάση της κατασκευής του ευρετηρίου για το MNIST χρησιμοποιούμε την εντολή **make build_mnist**.
-Για να εκτελέσουμε μόνο τη φάση της αναζήτησης για το MNIST χρησιμοποιούμε την εντολή **make search_mnist**.
-Για να διαγράψουμε τα παραγόμενα αρχεία χρησιμοποιούμε την εντολή **make clean_all**.
-Για να εμφανίσουμε όλες τις διαθέσιμες εντολές του Makefile χρησιμοποιούμε την εντολή **make help**
+
+
+## Απαιτήσεις Συστήματος
+
+1. Python 3.10+ με pip package manager
+2. PyTorch 2.0+ για ESM-2 embeddings
+3. CUDA-capable GPU (προτεινόμενο) για επιτάχυνση
+4. RAM 8GB+ για επεξεργασία embeddings
+5. Δίσκος 5GB+ για αποθήκευση δεδομένων
+6. Python 3.11 για βελτιστοποιημένη απόδοση
+7. PyTorch με CUDA 11.8+ για GPU υπολογισμούς
+8. RAM 16GB+ για μεγάλα datasets
+9. SSD/NVMe για γρήγορη ανάγνωση δεδομένων
+10. Multi-core CPU για παράλληλη επεξεργασία
+
+# Εγκατάσταση με Conda 
+conda create -n protein_search python=3.11
+conda activate protein_search
+conda install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia
+conda install numpy scipy pandas scikit-learn biopython tqdm
+pip install fair-esm
