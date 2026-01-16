@@ -128,9 +128,11 @@ Rank | Neighbor ID | L2 Dist | BLAST Identity | In BLAST Top-N? | Bio comment
 ## Οδηγίες Μεταγλώττισης και Εκτέλεσης
 # Πλήρης Εκτέλεση
 make all
-1. make embeddings
-2. make blast
-3. make blast-search
+# Για Παραγωγή Embedings
+    make embeddings
+# Για BLAST
+    1. make blast
+    2. make blast-search
 # Για LSH Search
     make lsh
 # Για  Hypercube Search
