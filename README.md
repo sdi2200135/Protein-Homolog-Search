@@ -22,8 +22,8 @@
 
 Το project αποτελείται από δύο κύρια προγράμματα:
 
-**protein_embed.py**: Μετατροπή πρωτεϊνικών ακολουθιών σε embeddings με ESM-2
-**protein_search.py**: Σύγκριση των 5 μεθόδων ANN και αξιολόγηση με βάση τα αποτελέσματα BLAST
+    **protein_embed.py**: Μετατροπή πρωτεϊνικών ακολουθιών σε embeddings με ESM-2
+    **protein_search.py**: Σύγκριση των 5 μεθόδων ANN και αξιολόγηση με βάση τα αποτελέσματα BLAST
 
 ## Κατάλογος Αρχείων
 ## Κύρια Προγράμματα
@@ -120,10 +120,10 @@
     IVF-PQ            | 0.005          | 200.0   | 0.90
 
 # Αναλυτικοί Γείτονες
-[2] Top-10 γείτονες ανά μέθοδο
-Method: Euclidean LSH
-Rank | Neighbor ID | L2 Dist | BLAST Identity | In BLAST Top-N? | Bio comment
-1    | P14181      | 1.685   | 0.0%           | No              | REMOTE HOMOLOG CANDIDATE (0.0%)
+    [2] Top-10 γείτονες ανά μέθοδο
+    Method: Euclidean LSH
+    Rank | Neighbor ID | L2 Dist | BLAST Identity | In BLAST Top-N? | Bio comment
+    1    | P14181      | 1.685   | 0.0%           | No              | REMOTE HOMOLOG CANDIDATE (0.0%)
 
 ## Οδηγίες Μεταγλώττισης και Εκτέλεσης
 # Πλήρης Εκτέλεση
