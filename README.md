@@ -111,6 +111,21 @@
     python protein_search.py -method neural --neural_epochs 10 --neural_k 10
 
 
+## Δομή Αποτελεσμάτων
+[1] Συνοπτική σύγκριση μεθόδων
+Method            | Time/query (s) | QPS     | Recall@N vs BLAST Top-N
+Euclidean LSH     | 0.020          | 50.0    | 0.92
+Hypercube         | 0.030          | 33.3    | 0.88
+Neural LSH        | 0.010          | 100.0   | 0.95
+IVF-Flat          | 0.008          | 125.0   | 0.93
+IVF-PQ            | 0.005          | 200.0   | 0.90
+
+# Αναλυτικοί Γείτονες
+[2] Top-10 γείτονες ανά μέθοδο
+Method: Euclidean LSH
+Rank | Neighbor ID | L2 Dist | BLAST Identity | In BLAST Top-N? | Bio comment
+1    | P14181      | 1.685   | 0.0%           | No              | REMOTE HOMOLOG CANDIDATE (0.0%)
+
 ## Οδηγίες Μεταγλώττισης και Εκτέλεσης
 Αρχικά, για την εγκατάσταση των απαραίτητων βιβλιοθηκών εκτελούμε την εντολή **make setup**.
 Στη συνέχεια, για να εκτελέσουμε πλήρως τον αλγόριθμο Neural LSH για το SIFT dataset χρησιμοποιούμε την εντολή **make run_sift**.
