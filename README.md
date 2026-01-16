@@ -62,29 +62,14 @@ Neural LSH
 
 
 ### Βοηθητικά modules -> **knn_graph/**
+1. **ANN/euclidean_lsh.py**   :
+2. **Hypercube/hypercube.py**    : 
+3. **IVFFlat/ivfflat.py**   :
+4. **IVFPQ/ivfpq.py**   :
+5. **Neural/neural_lsh.py** : 
+           **/graph_tools**:
 
-1. **build_knn.py**   :κατασκευή γράφου k-πλησιέστερων γειτόνων
-2. **read_knn.py**    : ανάγνωση γράφου k-NN
 
-###                   -> **graph_tools/**
-3. **symmetric.py**   : μετατροπή σε μη κατευθυνόμενο γράφο με βάρη
-4. **check.py**       : έλεγχος συνοχής γράφου
-5. **csr.py**         : μετατροπή σε μορφή CSR για KaHIP
-
-###                   -> **mlp/**
-6. **model.py**       : ορισμός μοντέλου MLP ταξινομητή
-7. **train.py**       : συναρτήσεις εκπαίδευσης MLP 
-
-###                   -> **search/**
-8. **loader.py**      : φόρτωση ευρετηρίου και υπολογισμός αποστάσεων
-9. **exact.py**       : ακριβής αναζήτηση για baseline 
-
-###                   -> **utils/**
-10. **dataset.py**      : φόρτωση συνόλων δεδομένων (MNIST/SIFT) αποστάσεων
-11. **logger.py**       : καταγραφή εξόδου σε αρχείο 
-
-### Επιπλέον αρχεία
-**requirements.txt** - Κατάλογος εξαρτήσεων Python
 
 ## Οδηγίες Εγκατάστασης
 
@@ -92,13 +77,14 @@ Neural LSH
     python3 -m venv venv
     source venv/bin/activate
 # Εγκατάσταση βασικών εξαρτήσεων
-    pip install torch numpy matplotlib networkx
+    pip install torch numpy biopython tqdm scikit-learn pandas
+    pip install fair-esm  # ESM-2 μοντέλο
+    pip install -r requirements.txt  # Όλες οι εξαρτήσεις
 # Εγκατάσταση KaHIP για διαμέριση γράφων
     pip install kahip
-# Επιπλέον βιβλιοθήκες
-    pip install scipy scikit-learn pandas seaborn
-# Εναλλακτικά, εγκατάσταση όλων των εξαρτήσεων
-    pip install -r requirements.txt
+# Εγκατάσταση ESM-2 Μοντέλου
+    python -c "import esm; print('ESM εγκατεστημένο')"
+
 
 
 ## Οδηγίες Χρήσης
