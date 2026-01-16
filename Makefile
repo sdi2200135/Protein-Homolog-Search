@@ -89,36 +89,3 @@ clean:
 	rm -f results_*.txt
 	rm -rf blast/
 	@echo "Cleanup completed"
-
-# -------------------------------
-# 11. Quick test (runs all methods with default parameters)
-# -------------------------------
-test: all
-	@echo "All tests completed successfully!"
-
-# -------------------------------
-# Help target
-# -------------------------------
-help:
-	@echo "Makefile for Protein Bioinformatics Assignment"
-	@echo ""
-	@echo "Available targets:"
-	@echo "  all              : Run all steps (default)"
-	@echo "  embeddings       : Generate protein embeddings"
-	@echo "  blast            : Create BLAST database"
-	@echo "  blast-search     : Run BLAST search"
-	@echo "  lsh              : Run LSH search"
-	@echo "  hypercube        : Run Hypercube search"
-	@echo "  ivfflat          : Run IVF-Flat search"
-	@echo "  ivfpq            : Run IVF-PQ search"
-	@echo "  neural           : Run Neural LSH search"
-	@echo "  ann-methods      : Run all ANN methods (LSH, Hypercube, IVF-Flat, IVF-PQ, Neural)"
-	@echo "  clean            : Remove generated files"
-	@echo "  test             : Quick test - run all methods"
-	@echo "  help             : Show this help message"
-	@echo ""
-	@echo "Usage examples:"
-	@echo "  make              # Run everything"
-	@echo "  make lsh          # Run only LSH search"
-	@echo "  make ann-methods  # Run all ANN methods"
-	@echo "  make clean        # Clean up generated files"
