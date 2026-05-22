@@ -1,168 +1,237 @@
-# Ανάπτυξη Λογισμικού για Αλγοριθμικά Προβλήματα - 3η Προγραμματιστική Εργασία - Αναζήτηση Απομακρυσμένων ομόλογων με Προσεγγιστικές Μεθόδους ESM
+# 🧬 Remote Homolog Search with ANN & ESM-2 Embeddings
 
-## Στοιχεία Φοιτητών
-**Ομάδα:**
-1. Παπαθανασίου Ελένη - 1115202200135
-2. Τόντου Αλτάνη-Δάφνη - 1115202200288
+> Searching for distant protein homologs using approximate nearest neighbor methods and protein language model embeddings.
 
-## Περιγραφή 
-Η παρούσα εργασία υλοποιεί ένα σύστημα για την αναζήτηση απομακρυσμένων ομόλογων πρωτεϊνών χρησιμοποιώντας προσεγγιστικές μεθόδους ANN (Approximate Nearest Neighbor) και διανυσματικές αναπαραστάσεις από το μοντέλο ESM-2.
+![Language](https://img.shields.io/badge/Language-Python%203.10%2B-blue)
+![Team](https://img.shields.io/badge/Team-2%20members-green)
 
-Οι μέθοδοι που υλοποιήθηκαν και αξιολογήθηκαν συγκριτικά είναι:
+---
 
-    Euclidean LSH - Locality Sensitive Hashing με Ευκλείδεια απόσταση
+## About This Project
 
-    Hypercube Projection - Ταχύτατη αναζήτηση σε υπερκύβο
+This is the **3rd Programming Assignment** for the course *"Software Development for Algorithmic Problems"*.
 
-    IVF-Flat - Inverted File με ακριβείς αποστάσεις
+It implements a pipeline for **remote protein homolog search** — finding evolutionarily related proteins
+that share little sequence similarity. The approach combines:
 
-    IVF-PQ - Product Quantization για εξοικονόμηση μνήμης
+- **ESM-2** (Meta's protein language model) to generate dense vector embeddings from protein sequences
+- **Five ANN algorithms** to search efficiently over those embeddings
+- **BLAST** results as ground truth for evaluation (Recall@N metric)
 
-    Neural LSH - Νευρωνικό δίκτυο για βελτιστοποιημένη προβολή
+This assignment unifies all methods from Assignments 1 & 2 into a single bioinformatics application.
 
-Το project αποτελείται από δύο κύρια προγράμματα:
+---
 
-    **protein_embed.py**: Μετατροπή πρωτεϊνικών ακολουθιών σε embeddings με ESM-2
-    **protein_search.py**: Σύγκριση των 5 μεθόδων ANN και αξιολόγηση με βάση τα αποτελέσματα BLAST
+## Team
 
-## Κατάλογος Αρχείων
-### Κύρια Προγράμματα
+| Name | Student ID |
+|------|-----------|
+| Παπαθανασίου Ελένη | 1115202200135 |
+| Τόντου Αλτάνη-Δάφνη | 1115202200288 |
 
-1. **protein_embed.py**  : Μετατροπή FASTA αρχείων σε ESM-2 embeddings
-2. **protein_search.py** : Αναζήτηση και αξιολόγηση με 5 μεθόδους ANN
+---
 
-### Μέθοδοι Αναζήτησης 
-1. **ANN/euclidean_lsh.py**   : LSH με Ευκλείδειες αποστάσεις και multi-probe
-2. **Hypercube/hypercube.py** : Προβολή σε υπερκύβο με Hamming απόσταση
-3. **IVFFlat/ivfflat.py**     : IVF με ακριβείς αποστάσεις και K-means clustering
-4. **IVFPQ/ivfpq.py**         : IVF με Product Quantization για συμπίεση
-5. **Neural/neural_lsh.py**   : Υβριδική μέθοδος με MLP και partitioning
-6. **Neural/graph_tools**     : Βοηθητικά αρχεία για την υλοποίηση του Neural LSH
+## Methods Implemented & Compared
 
-### Αρχεία Δεδομένων (παραδείγματα)
-1. **swissprot.fasta** : Βάση δεδομένων πρωτεϊνών
-2. **targets.fasta** : Πρωτεΐνες-στόχοι για αναζήτηση
-3. **blast_results.txt** : Αποτελέσματα BLAST για αξιολόγηση
+| Method | Description |
+|--------|-------------|
+| **Euclidean LSH** | Locality Sensitive Hashing with L2 distance + multi-probe |
+| **Hypercube** | Random projection onto hypercube with Hamming distance |
+| **IVF-Flat** | Inverted File index with exact distances via k-means |
+| **IVF-PQ** | Inverted File + Product Quantization for memory efficiency |
+| **Neural LSH** | Hybrid MLP + graph partitioning (KaHIP) for learned indexing |
 
+---
 
-## Οδηγίες Εγκατάστασης
-### Δημιουργία και ενεργοποίηση virtual environment
-    python3 -m venv venv
-    source venv/bin/activate
-### Εγκατάσταση βασικών εξαρτήσεων
-    pip install torch numpy biopython tqdm scikit-learn pandas
-    pip install fair-esm  # ESM-2 μοντέλο
-    pip install -r requirements.txt  # Όλες οι εξαρτήσεις
-### Εγκατάσταση KaHIP για διαμέριση γράφων
-    pip install kahip
-### Εγκατάσταση ESM-2 Μοντέλου
-    python -c "import esm; print('ESM εγκατεστημένο')"
+## Tech Stack
 
+- **Python 3.10+** — main language
+- **ESM-2** (`fair-esm`) — protein sequence embeddings
+- **PyTorch 2.0+** — deep learning backbone (GPU-accelerated)
+- **BioPython** — FASTA parsing
+- **KaHIP** — graph partitioning for Neural LSH
+- **scikit-learn / NumPy / SciPy** — data processing
+- **Makefile** — unified pipeline runner
 
+---
 
-## Οδηγίες Χρήσης
-### Βήμα 1: Παραγωγή Embeddings
-    python protein_embed.py -i swissprot.fasta -o protein_vectors.dat \ --model esm2_t6_8M_UR50D --batch-size 16
+## Project Structure
 
-    Παράμετροι:
+```
+📄 protein_embed.py          → Convert FASTA sequences to ESM-2 embeddings
+📄 protein_search.py         → Run & compare all 5 ANN methods
 
-    -i: Είσοδος FASTA αρχείο
+📁 ANN/
+   └── euclidean_lsh.py      → LSH with Euclidean distance + multi-probe
 
-    -o: Έξοδος δυαδικό αρχείο embeddings
+📁 Hypercube/
+   └── hypercube.py          → Hypercube projection with Hamming distance
 
-    --model: Προεκπαιδευμένο μοντέλο ESM-2
+📁 IVFFlat/
+   └── ivfflat.py            → IVF with exact distances + k-means
 
-    --batch-size: Μέγεθος batch για επεξεργασία
+📁 IVFPQ/
+   └── ivfpq.py              → IVF with Product Quantization
 
-### Βήμα 2: Αναζήτηση και Αξιολόγηση
-    python protein_search.py -d protein_vectors.dat -q targets.fasta \ -blast blast_results.txt -o results.txt -method all \ --recall_N 50 --N 10
-    
-    Παράμετροι:
+📁 Neural/
+   ├── neural_lsh.py         → Hybrid MLP + partitioning method
+   └── graph_tools/          → Graph utilities for Neural LSH
 
-    -d: Αρχείο embeddings βάσης δεδομένων
+📄 swissprot.fasta           → Protein database
+📄 targets.fasta             → Query proteins
+📄 blast_results.txt         → BLAST ground truth for evaluation
+📄 requirements.txt
+📄 Makefile
+```
 
-    -q: Query FASTA αρχείο
+---
 
-    -blast: Αποτελέσματα BLAST για αξιολόγηση
+## Installation
 
-    -o: Αρχείο εξόδου με αποτελέσματα
+### With pip (virtual environment)
 
-    -method: Μέθοδος ANN (all, lsh, hypercube, neural, ivfflat, ivfpq)
+```bash
+python3 -m venv venv
+source venv/bin/activate
 
-    --recall_N: N για υπολογισμό Recall@N
+pip install -r requirements.txt
+# or manually:
+pip install torch numpy biopython tqdm scikit-learn pandas
+pip install fair-esm
+pip install kahip
+```
 
-    --N: Αριθμός γειτόνων για εμφάνιση
+### With Conda (recommended for GPU)
 
-### Βήμα 3: Τρέξιμο Μεθόδων
-#### Euclidean LSH
-    python protein_search.py -method lsh --lsh_k 10 --lsh_L 5 --lsh_w 4.0
+```bash
+conda create -n protein_search python=3.11
+conda activate protein_search
+conda install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia
+conda install numpy scipy pandas scikit-learn biopython tqdm
+pip install fair-esm
+```
 
-#### Hypercube
-    python protein_search.py -method hypercube --hypercube_k 10 --hypercube_M 1000
+Verify ESM-2 installation:
+```bash
+python -c "import esm; print('ESM installed successfully')"
+```
 
-#### IVF-Flat
-    python protein_search.py -method ivfflat --ivfflat_nlist 100 --ivfflat_nprobe 10
+---
 
-#### IVF-PQ
-    python protein_search.py -method ivfpq --ivfpq_nlist 100 --ivfpq_m 8
+## Pipeline
 
-#### Neural LSH
-    python protein_search.py -method neural --neural_epochs 10 --neural_k 10
+### Step 1 — Generate embeddings
 
+```bash
+python protein_embed.py -i swissprot.fasta -o protein_vectors.dat \
+  --model esm2_t6_8M_UR50D --batch-size 16
+```
 
-## Δομή Αποτελεσμάτων
-    [1] Συνοπτική σύγκριση μεθόδων
-    Method            | Time/query (s) | QPS     | Recall@N vs BLAST Top-N
-    Euclidean LSH     | 0.020          | 50.0    | 0.92
-    Hypercube         | 0.030          | 33.3    | 0.88
-    Neural LSH        | 0.010          | 100.0   | 0.95
-    IVF-Flat          | 0.008          | 125.0   | 0.93
-    IVF-PQ            | 0.005          | 200.0   | 0.90
+| Parameter | Description |
+|-----------|-------------|
+| `-i` | Input FASTA file |
+| `-o` | Output binary embeddings file |
+| `--model` | Pretrained ESM-2 model variant |
+| `--batch-size` | Batch size for processing |
 
-## Αναλυτικοί Γείτονες
-    [2] Top-10 γείτονες ανά μέθοδο
-    Method: Euclidean LSH
-    Rank | Neighbor ID | L2 Dist | BLAST Identity | In BLAST Top-N? | Bio comment
-    1    | P14181      | 1.685   | 0.0%           | No              | REMOTE HOMOLOG CANDIDATE (0.0%)
+### Step 2 — Search & evaluate
 
-## Οδηγίες Μεταγλώττισης και Εκτέλεσης
-### Πλήρης Εκτέλεση
-    make all
-### Για Παραγωγή Embedings
-    make embeddings
-### Για BLAST
-    1. make blast
-    2. make blast-search
-### Για LSH Search
-    make lsh
-### Για  Hypercube Search
-    make hypercube
-### Για IVFFlat Search
-    make ivfflat
-### Για IVFPQ Search
-    make ivfpq
-### Για Neural LSH Search
-    make neural
-### Για όλες τις μεθοδους 
-    make ann-methods
-### Διαγραφή παραγόμενων αρχείων
-    make clean
+```bash
+python protein_search.py -d protein_vectors.dat -q targets.fasta \
+  -blast blast_results.txt -o results.txt -method all \
+  --recall_N 50 --N 10
+```
 
-## Απαιτήσεις Συστήματος
-1. Python 3.10+ με pip package manager
-2. PyTorch 2.0+ για ESM-2 embeddings
-3. CUDA-capable GPU (προτεινόμενο) για επιτάχυνση
-4. RAM 8GB+ για επεξεργασία embeddings
-5. Δίσκος 5GB+ για αποθήκευση δεδομένων
-6. Python 3.11 για βελτιστοποιημένη απόδοση
-7. PyTorch με CUDA 11.8+ για GPU υπολογισμούς
-8. RAM 16GB+ για μεγάλα datasets
-9. SSD/NVMe για γρήγορη ανάγνωση δεδομένων
-10. Multi-core CPU για παράλληλη επεξεργασία
+| Parameter | Description |
+|-----------|-------------|
+| `-d` | Embeddings database file |
+| `-q` | Query FASTA file |
+| `-blast` | BLAST results for evaluation |
+| `-o` | Output results file |
+| `-method` | `all`, `lsh`, `hypercube`, `ivfflat`, `ivfpq`, `neural` |
+| `--recall_N` | N for Recall@N computation |
+| `--N` | Number of neighbors to return |
 
-## Εγκατάσταση με Conda 
-1. conda create -n protein_search python=3.11
-2. conda activate protein_search
-3. conda install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia
-4. conda install numpy scipy pandas scikit-learn biopython tqdm
-5. pip install fair-esm
+### Step 3 — Run individual methods
+
+```bash
+# Euclidean LSH
+python protein_search.py -method lsh --lsh_k 10 --lsh_L 5 --lsh_w 4.0
+
+# Hypercube
+python protein_search.py -method hypercube --hypercube_k 10 --hypercube_M 1000
+
+# IVF-Flat
+python protein_search.py -method ivfflat --ivfflat_nlist 100 --ivfflat_nprobe 10
+
+# IVF-PQ
+python protein_search.py -method ivfpq --ivfpq_nlist 100 --ivfpq_m 8
+
+# Neural LSH
+python protein_search.py -method neural --neural_epochs 10 --neural_k 10
+```
+
+---
+
+## Build & Run (Makefile)
+
+```bash
+make all            # full pipeline
+make embeddings     # generate ESM-2 embeddings
+make blast          # run BLAST
+make blast-search   # BLAST search
+make lsh            # Euclidean LSH search
+make hypercube      # Hypercube search
+make ivfflat        # IVF-Flat search
+make ivfpq          # IVF-PQ search
+make neural         # Neural LSH search
+make ann-methods    # run all 5 ANN methods
+make clean          # remove generated files
+```
+
+---
+
+## Sample Results
+
+```
+Method            | Time/query (s) | QPS     | Recall@N
+Euclidean LSH     | 0.020          | 50.0    | 0.92
+Hypercube         | 0.030          | 33.3    | 0.88
+IVF-Flat          | 0.008          | 125.0   | 0.93
+IVF-PQ            | 0.005          | 200.0   | 0.90
+Neural LSH        | 0.010          | 100.0   | 0.95
+```
+
+---
+
+## System Requirements
+
+| | Minimum | Recommended |
+|---|---------|-------------|
+| **Python** | 3.10 | 3.11 |
+| **RAM** | 8GB | 16GB+ |
+| **GPU** | — | CUDA 11.8+ |
+| **Storage** | 5GB | SSD/NVMe |
+| **CPU** | Any | Multi-core |
+
+---
+
+## Key Concepts Demonstrated
+
+- Protein language models (ESM-2) for biological sequence embedding
+- Bridging bioinformatics (BLAST, FASTA) with modern ML vector search
+- Unified benchmarking of 5 ANN algorithms on a real-world domain
+- Graph construction, partitioning, and MLP-based learned indexing
+- Recall@N evaluation against BLAST ground truth
+- End-to-end ML pipeline: embedding → indexing → search → evaluation
+
+---
+
+## Related
+
+- [Assignment 1 — C++ ANN Search (LSH, Hypercube, IVFFlat, IVFPQ)](../Project)
+- [Assignment 2 — Neural LSH in Python](../neural-lsh-python)
+
+---
+
+*3rd Programming Assignment · Software Development for Algorithmic Problems*
