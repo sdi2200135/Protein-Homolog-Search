@@ -20,6 +20,10 @@ that share little sequence similarity. The approach combines:
 
 This assignment unifies all methods from Assignments 1 & 2 into a single bioinformatics application.
 
+🌐 **[View the interactive presentation](https://sdi2200135.github.io/Protein-Homolog-Search/)**
+
+[![Website](https://img.shields.io/badge/Website-Live-brightgreen)](https://sdi2200135.github.io/Protein-Homolog-Search/)
+
 ---
 
 ## Team
