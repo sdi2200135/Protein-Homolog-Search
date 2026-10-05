@@ -1,0 +1,1547 @@
+<!-- site for the explanation of the project -->
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Remote Homolog Search — ANN & ESM-2</title>
+<style>
+:root {
+  --bg: #0a1410;
+  --bg-card: #13201c;
+  --bg-soft: #1f332e;
+  --text: #e2e8f0;
+  --text-muted: #94a3b8;
+  --accent: #14b8a6;
+  --accent-2: #5eead4;
+  --success: #34d399;
+  --warn: #fbbf24;
+  --danger: #f87171;
+  --lsh: #60a5fa;
+  --hyp: #34d399;
+  --ivf: #fbbf24;
+  --pq: #f87171;
+  --neural: #a78bfa;
+  --border: #1f332e;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  min-height: 100vh;
+}
+
+nav {
+  background: rgba(10, 20, 16, 0.95);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  padding: 0 1.5rem;
+}
+
+.nav-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.logo {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--accent);
+  letter-spacing: -0.5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.logo::before { content: "🧬"; font-size: 1.2rem; }
+
+.nav-links {
+  display: flex;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+  list-style: none;
+}
+
+.nav-links a {
+  color: var(--text-muted);
+  text-decoration: none;
+  padding: 0.5rem 0.85rem;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.nav-links a:hover { color: var(--text); background: var(--bg-soft); }
+.nav-links a.active { color: var(--bg); background: var(--accent); }
+
+main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 4rem;
+}
+
+.page { display: none; animation: fadeIn 0.4s ease; }
+.page.active { display: block; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.hero {
+  text-align: center;
+  padding: 2rem 0 3rem;
+}
+
+.hero h1 {
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  font-weight: 800;
+  letter-spacing: -1px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 1rem;
+}
+
+.hero p {
+  color: var(--text-muted);
+  max-width: 760px;
+  margin: 0 auto 1.5rem;
+  font-size: 1.05rem;
+}
+
+.badges {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 2rem;
+}
+
+.badge {
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+}
+
+.badge.py { color: var(--accent-2); border-color: var(--accent-2); }
+.badge.torch { color: #f87171; border-color: #f87171; }
+.badge.esm { color: #34d399; border-color: #34d399; }
+.badge.blast { color: #fbbf24; border-color: #fbbf24; }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.25rem;
+  margin: 1.5rem 0;
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.5rem;
+  transition: all 0.25s;
+}
+
+.card:hover { transform: translateY(-3px); border-color: var(--accent); }
+
+.card h3 { font-size: 1.1rem; margin-bottom: 0.6rem; color: var(--text); }
+.card p { color: var(--text-muted); font-size: 0.92rem; }
+
+.algo-card { cursor: pointer; position: relative; overflow: hidden; }
+.algo-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--accent);
+}
+.algo-card.lsh::before { background: var(--lsh); }
+.algo-card.hyp::before { background: var(--hyp); }
+.algo-card.ivf::before { background: var(--ivf); }
+.algo-card.pq::before  { background: var(--pq); }
+.algo-card.neural::before { background: var(--neural); }
+
+.algo-card h3 { display: flex; align-items: center; gap: 0.5rem; }
+.algo-card .tag {
+  font-size: 0.7rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.tag.lsh { background: rgba(96,165,250,0.15); color: var(--lsh); }
+.tag.hyp { background: rgba(52,211,153,0.15); color: var(--hyp); }
+.tag.ivf { background: rgba(251,191,36,0.15); color: var(--ivf); }
+.tag.pq  { background: rgba(248,113,113,0.15); color: var(--pq); }
+.tag.neural { background: rgba(167,139,250,0.15); color: var(--neural); }
+
+.section {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.section h2 {
+  font-size: 1.3rem;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--text);
+}
+
+.section h2 .num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  background: var(--accent);
+  color: var(--bg);
+  flex-shrink: 0;
+}
+
+.section h3 {
+  font-size: 1rem;
+  margin: 1.2rem 0 0.6rem;
+  color: var(--accent-2);
+  font-weight: 600;
+}
+
+.algo-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.algo-header .icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.algo-header.lsh .icon { background: rgba(96,165,250,0.15); color: var(--lsh); }
+.algo-header.hyp .icon { background: rgba(52,211,153,0.15); color: var(--hyp); }
+.algo-header.ivf .icon { background: rgba(251,191,36,0.15); color: var(--ivf); }
+.algo-header.pq  .icon { background: rgba(248,113,113,0.15); color: var(--pq); }
+.algo-header.neural .icon { background: rgba(167,139,250,0.15); color: var(--neural); }
+.algo-header.esm .icon { background: rgba(20,184,166,0.15); color: var(--accent); }
+
+.algo-header h1 { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.5px; }
+.algo-header p { color: var(--text-muted); font-size: 0.95rem; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.75rem 0;
+  font-size: 0.9rem;
+  overflow: hidden;
+  border-radius: 10px;
+}
+
+th, td {
+  padding: 0.7rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+th {
+  background: var(--bg-soft);
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+}
+
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(20, 184, 166, 0.04); }
+
+td code, p code, li code, .step code {
+  background: var(--bg-soft);
+  padding: 0.15rem 0.45rem;
+  border-radius: 5px;
+  font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+  font-size: 0.85em;
+  color: var(--accent-2);
+  border: 1px solid var(--border);
+}
+
+.step-list {
+  list-style: none;
+  counter-reset: step;
+  padding-left: 0;
+}
+
+.step-list li {
+  counter-increment: step;
+  position: relative;
+  padding: 0.8rem 0 0.8rem 3rem;
+  border-left: 2px solid var(--border);
+  margin-left: 1rem;
+}
+
+.step-list li::before {
+  content: counter(step);
+  position: absolute;
+  left: -1.05rem;
+  top: 0.8rem;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+  border: 3px solid var(--bg-card);
+}
+
+.step-list li:last-child { border-left-color: transparent; }
+.step-list li strong { color: var(--text); }
+.step-list li span { color: var(--text-muted); font-size: 0.92rem; display: block; margin-top: 0.15rem; }
+
+pre {
+  background: #060d0a;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem 1.2rem;
+  overflow-x: auto;
+  font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: #cbd5e1;
+  margin: 0.75rem 0;
+}
+
+pre .kw { color: #c084fc; }
+pre .cm { color: #64748b; font-style: italic; }
+pre .str { color: #86efac; }
+pre .num { color: #fbbf24; }
+pre .fn { color: #5eead4; }
+
+.result-box {
+  background: linear-gradient(135deg, rgba(20,184,166,0.08), rgba(94,234,212,0.08));
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem 1.2rem;
+  margin: 0.75rem 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
+
+.exp-table-wrap { overflow-x: auto; margin: 1rem 0; }
+.exp-table { min-width: 700px; background: var(--bg-soft); }
+.exp-table th { background: #060d0a; }
+
+.chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+  height: 220px;
+  padding: 1rem 0;
+  margin: 1rem 0;
+  border-bottom: 2px solid var(--border);
+}
+
+.chart-bar {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+  position: relative;
+}
+
+.chart-bar .bar {
+  width: 100%;
+  border-radius: 6px 6px 0 0;
+  transition: all 0.3s;
+}
+
+.chart-bar .bar:hover { filter: brightness(1.2); }
+.chart-bar .label {
+  position: absolute;
+  bottom: -28px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+.chart-bar .value {
+  position: absolute;
+  top: -22px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.bar.blue { background: linear-gradient(180deg, #60a5fa, #3b82f6); }
+.bar.green { background: linear-gradient(180deg, #34d399, #10b981); }
+.bar.amber { background: linear-gradient(180deg, #fbbf24, #f59e0b); }
+.bar.red { background: linear-gradient(180deg, #f87171, #ef4444); }
+.bar.purple { background: linear-gradient(180deg, #a78bfa, #8b5cf6); }
+
+.alert {
+  padding: 1rem 1.2rem;
+  border-radius: 10px;
+  margin: 0.75rem 0;
+  border-left: 4px solid;
+  font-size: 0.92rem;
+}
+
+.alert.info { background: rgba(20,184,166,0.08); border-color: var(--accent); }
+.alert.success { background: rgba(52,211,153,0.08); border-color: var(--success); }
+.alert.warn { background: rgba(251,191,36,0.08); border-color: var(--warn); }
+.alert.danger { background: rgba(248,113,113,0.08); border-color: var(--danger); }
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.stat {
+  background: var(--bg-soft);
+  border-radius: 10px;
+  padding: 1rem;
+  text-align: center;
+}
+
+.stat .value {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--accent);
+  display: block;
+  line-height: 1.2;
+}
+
+.stat .name {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.pipeline {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin: 1rem 0;
+  padding: 1rem;
+  background: #060d0a;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+
+.pipeline-step {
+  padding: 0.5rem 0.9rem;
+  background: var(--bg-soft);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.pipeline-arrow { color: var(--accent); font-weight: 700; }
+
+.example-box {
+  background: #060d0a;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.2rem;
+  margin: 1rem 0;
+}
+
+.example-box .header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px dashed var(--border);
+}
+
+.example-box .header .label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--accent);
+  padding: 0.25rem 0.6rem;
+  background: rgba(20,184,166,0.1);
+  border-radius: 5px;
+}
+
+.example-box .header .query-id {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.example-box .finding {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.example-box .finding:last-child { border-bottom: none; }
+.example-box .finding strong { color: var(--accent-2); }
+.example-box .finding .val { color: var(--warn); font-weight: 700; }
+.example-box .finding .ok { color: var(--success); font-weight: 700; }
+.example-box .finding .no { color: var(--danger); font-weight: 700; }
+
+footer {
+  text-align: center;
+  padding: 2rem 1.5rem;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  border-top: 1px solid var(--border);
+  margin-top: 2rem;
+}
+
+@media (max-width: 640px) {
+  .nav-inner { height: auto; padding: 0.75rem 0; }
+  .nav-links { width: 100%; justify-content: center; }
+  .nav-links a { padding: 0.4rem 0.7rem; font-size: 0.82rem; }
+  .section { padding: 1.25rem; }
+  .algo-header h1 { font-size: 1.3rem; }
+  .pipeline { flex-direction: column; align-items: stretch; }
+  .pipeline-arrow { transform: rotate(90deg); text-align: center; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <div class="logo" onclick="go('home')">Remote Homolog Search</div>
+    <ul class="nav-links">
+      <li><a data-page="home" onclick="go('home')">Αρχική</a></li>
+      <li><a data-page="embed" onclick="go('embed')">ESM-2</a></li>
+      <li><a data-page="lsh" onclick="go('lsh')">LSH</a></li>
+      <li><a data-page="hypercube" onclick="go('hypercube')">Hypercube</a></li>
+      <li><a data-page="ivfflat" onclick="go('ivfflat')">IVFFlat</a></li>
+      <li><a data-page="ivfpq" onclick="go('ivfpq')">IVFPQ</a></li>
+      <li><a data-page="neural" onclick="go('neural')">Neural LSH</a></li>
+      <li><a data-page="study" onclick="go('study')">Μελέτη</a></li>
+    </ul>
+  </div>
+</nav>
+
+<main>
+
+<!-- ==================== HOME ==================== -->
+<section class="page active" id="home">
+  <div class="hero">
+    <h1>Remote Homolog Search</h1>
+    <p>
+      Εντοπισμός απομακρυσμένων ομόλογων πρωτεϊνών με συνδυασμό 
+      <strong>protein language models (ESM-2)</strong> και <strong>Approximate 
+      Nearest Neighbor</strong> αλγορίθμων.
+    </p>
+    <div class="badges">
+      <span class="badge py">Python 3.10+</span>
+      <span class="badge torch">PyTorch 2.0+</span>
+      <span class="badge esm">ESM-2 (fair-esm)</span>
+      <span class="badge blast">BLAST ground truth</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>📖 Σχετικά με την Εργασία</h2>
+    <p>
+      Η παρούσα εργασία αποτελεί την <strong>3η Προγραμματιστική Εργασία</strong> 
+      του μαθήματος <em>«Ανάπτυξη Λογισμικού για Αλγοριθμικά Προβλήματα»</em>. 
+      Στόχος είναι η <strong>συγκριτική αξιολόγηση 5 προσεγγιστικών μεθόδων 
+      αναζήτησης πλησιέστερων γειτόνων</strong> για την ανίχνευση 
+      <em>remote homologs</em> — πρωτεϊνών με παρόμοια δομή/λειτουργία αλλά 
+      <strong>πολύ χαμηλή ομοιότητα ακολουθίας</strong> (&lt; 30% identity).
+    </p>
+
+    <div class="grid">
+      <div class="card">
+        <h3>🧬 ESM-2 Embeddings</h3>
+        <p>Χρήση του protein language model <strong>ESM-2</strong> της Meta για τη 
+        δημιουργία πυκνών διανυσματικών αναπαραστάσεων (320d) από ακολουθίες.</p>
+      </div>
+      <div class="card">
+        <h3>🔍 5 ANN Μέθοδοι</h3>
+        <p>Euclidean LSH, Hypercube, IVF-Flat, IVF-PQ και Neural LSH — unified 
+        benchmarking στο ίδιο domain.</p>
+      </div>
+      <div class="card">
+        <h3>📊 BLAST ως Ground Truth</h3>
+        <p>Τα αποτελέσματα του BLAST χρησιμοποιούνται ως reference για τον 
+        υπολογισμό Recall@N.</p>
+      </div>
+    </div>
+
+    <div class="alert info">
+      <strong>Καινοτομία:</strong> Η εργασία ενοποιεί <em>όλες</em> τις μεθόδους 
+      από τις 1η και 2η εργασίες (C++ και Python) σε ένα ενιαίο bioinformatics 
+      application με πραγματικά δεδομένα (SwissProt, UniProt).
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>🔀 Pipeline</h2>
+
+    <h3>Φάση 1 — Embedding Generation</h3>
+    <div class="pipeline">
+      <span class="pipeline-step">FASTA</span>
+      <span class="pipeline-arrow">→</span>
+      <span class="pipeline-step">ESM-2</span>
+      <span class="pipeline-arrow">→</span>
+      <span class="pipeline-step">Mean Pooling</span>
+      <span class="pipeline-arrow">→</span>
+      <span class="pipeline-step">320d vectors</span>
+      <span class="pipeline-arrow">→</span>
+      <span class="pipeline-step">.dat file</span>
+    </div>
+
+    <h3>Φάση 2 — BLAST Ground Truth</h3>
+    <div class="pipeline">
+      <span class="pipeline-step">makeblastdb</span>
+      <span class="pipeline-arrow">→</span>
+      <span class="pipeline-step">blastp -outfmt 6</span>
+      <span class="pipeline-arrow">→</span>
+      <span class="pipeline-step">blast_results.tsv</span>
+    </div>
+
+    <h3>Φάση 3 — ANN Search & Evaluation</h3>
+    <div class="pipeline">
+      <span class="pipeline-step">Load embeddings</span>
+      <span class="pipeline-arrow">→</span>
+      <span class="pipeline-step">5 ANN methods</span>
+      <span class="pipeline-arrow">→</span>
+      <span class="pipeline-step">Recall@N vs BLAST</span>
+      <span class="pipeline-arrow">→</span>
+      <span class="pipeline-step">Report</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>🧠 Οι 5 ANN Μέθοδοι</h2>
+    <p style="color:var(--text-muted); margin-bottom:1rem;">
+      Πατήστε σε κάποια μέθοδο για να δείτε αναλυτικά πώς υλοποιείται.
+    </p>
+    <div class="grid">
+      <div class="card algo-card lsh" onclick="go('lsh')">
+        <h3>Euclidean LSH <span class="tag lsh">hash</span></h3>
+        <p>Πολλαπλοί πίνακες κατακερματισμού με multi-probe Hamming expansion.</p>
+      </div>
+      <div class="card algo-card hyp" onclick="go('hypercube')">
+        <h3>Hypercube <span class="tag hyp">projection</span></h3>
+        <p>Προβολή σε δυαδικές κορυφές με Hamming distance traversal.</p>
+      </div>
+      <div class="card algo-card ivf" onclick="go('ivfflat')">
+        <h3>IVF-Flat <span class="tag ivf">clustering</span></h3>
+        <p>k-means clustering με ακριβή υπολογισμό αποστάσεων.</p>
+      </div>
+      <div class="card algo-card pq" onclick="go('ivfpq')">
+        <h3>IVF-PQ <span class="tag pq">compression</span></h3>
+        <p>Product Quantization + Look-Up Tables για γρήγορη αναζήτηση.</p>
+      </div>
+      <div class="card algo-card neural" onclick="go('neural')">
+        <h3>Neural LSH <span class="tag neural">learned</span></h3>
+        <p>MLP classifier που προβλέπει partition labels αντί για hash functions.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>👥 Ομάδα</h2>
+    <table>
+      <thead><tr><th>Ονοματεπώνυμο</th><th>Α.Μ.</th></tr></thead>
+      <tbody>
+        <tr><td>Παπαθανασίου Ελένη</td><td>1115202200135</td></tr>
+        <tr><td>Τόντου Αλτάνη-Δάφνη</td><td>1115202200288</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ==================== ESM-2 EMBEDDING ==================== -->
+<section class="page" id="embed">
+  <div class="algo-header esm">
+    <div class="icon">🧬</div>
+    <div>
+      <h1>ESM-2 Embedding Generation</h1>
+      <p>Μετατροπή ακολουθιών πρωτεϊνών σε διανύσματα — <code>protein_embed.py</code></p>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2><span class="num">1</span> Input</h2>
+    <table>
+      <thead><tr><th>Παράμετρος</th><th>Περιγραφή</th><th>Default</th></tr></thead>
+      <tbody>
+        <tr><td><code>-i</code></td><td>Input FASTA file (π.χ. swissprot_50k.fasta)</td><td>—</td></tr>
+        <tr><td><code>-o</code></td><td>Output binary file</td><td>vectors.dat</td></tr>
+        <tr><td><code>--model</code></td><td>ESM-2 variant</td><td>esm2_t6_8M_UR50D</td></tr>
+        <tr><td><code>--batch-size</code></td><td>Batch size</td><td>8</td></tr>
+        <tr><td><code>--max-length</code></td><td>Max sequence length</td><td>1022</td></tr>
+        <tr><td><code>--device</code></td><td>cpu / cuda (auto)</td><td>auto</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2><span class="num">2</span> Διαδικασία Embedding</h2>
+
+    <ol class="step-list">
+      <li><strong>Φόρτωση FASTA</strong><span>Ανάγνωση με <code>Bio.SeqIO.parse()</code>. Φιλτράρισμα μη έγκυρων αμινοξέων (κρατάμε μόνο ACDEFGHIKLMNPQRSTVWY).</span></li>
+      <li><strong>Ταξινόμηση κατά μήκος</strong><span>Για βέλτιστο padding στα batches — μικρότερες ακολουθίες μαζί.</span></li>
+      <li><strong>Batch processing</strong><span>Ομαδοποίηση σε batches των 8. Κάθε batch περνά από τον <code>batch_converter</code> για tokenization.</span></li>
+      <li><strong>ESM-2 forward pass</strong><span><code>model(tokens, repr_layers=[6])</code> → παίρνουμε representations από το τελευταίο layer (6ο για το 8M variant).</span></li>
+      <li><strong>Mean pooling με mask</strong><span>Αγνοούμε padding tokens μέσω mask. <code>sum_embeddings / token_counts</code> → ένα διάνυσμα 320d ανά πρωτεΐνη.</span></li>
+      <li><strong>Αποθήκευση σε binary file</strong><span>Custom format: header "ESM2" + version + N + D + IDs + embeddings (float32).</span></li>
+    </ol>
+
+    <h3>Mean Pooling με Mask</h3>
+    <pre>mask = (tokens != padding_idx).float()
+mask_expanded = mask.unsqueeze(-1).expand(token_embeddings.size())
+
+sum_embeddings = torch.sum(token_embeddings * mask_expanded, dim=1)
+token_counts = torch.sum(mask, dim=1, keepdim=True)
+embeddings = sum_embeddings / token_counts.clamp(min=1e-9)</pre>
+
+    <div class="alert info">
+      <strong>Γιατί mean pooling με mask:</strong> Αγνοεί τα padding tokens, δίνοντας 
+      ένα σταθερό 320d διάνυσμα που αντιπροσωπεύει ολόκληρη την ακολουθία.
+    </div>
+  </div>
+
+  <div class="section">
+    <h2><span class="num">3</span> Binary Format</h2>
+    <pre><span class="cm"># Δομή αρχείου vectors.dat</span>
+[4 bytes]  magic = "ESM2"
+[1 byte]   version = 1
+[4 bytes]  N = αριθμός πρωτεϊνών
+[4 bytes]  D = διάσταση (320)
+[4 bytes]  max_id_len
+
+<span class="cm"># IDs section</span>
+Για κάθε ID: [2 bytes length] + [UTF-8 string] + [padding]
+
+<span class="cm"># Embeddings section</span>
+N × D × 4 bytes (float32)</pre>
+
+    <div class="alert success">
+      <strong>Πλεονέκτημα:</strong> Το binary format είναι <strong>3x μικρότερο</strong> 
+      από CSV και η φόρτωση γίνεται με ένα <code>np.fromfile()</code> — στιγμιαία.
+    </div>
+  </div>
+
+  <div class="section">
+    <h2><span class="num">4</span> Output</h2>
+    <div class="result-box">Χρήση συσκευής: cuda
+Φόρτωση μοντέλου esm2_t6_8M_UR50D...
+Μοντέλο φορτώθηκε: esm2_t6_8M_UR50D
+Αριθμός επιπέδων: 6
+Διάσταση embeddings: 320
+Ανάγνωση FASTA αρχείου: swissprot_50k.fasta
+Βρέθηκαν 49999 έγκυρες ακολουθίες
+Εξαγωγή embeddings...
+Processing: 100%|██████████| 6250/6250 [02:45<00:00]
+Ολοκληρώθηκε σε 165.43 δευτερόλεπτα
+Παράχθηκαν 49999 embeddings
+
+============================================================
+ΣΥΝΟΨΗ ΑΠΟΘΗΚΕΥΣΗΣ
+============================================================
+Είσοδος FASTA: swissprot_50k.fasta
+Έξοδος ενιαίου αρχείου: output.dat
+Πρωτεΐνες που επεξεργάστηκαν: 49999
+Διάσταση embeddings: 320
+Μέγεθος ενιαίου αρχείου: 61.03 MB</div>
+  </div>
+</section>
+
+<!-- ==================== LSH ==================== -->
+<section class="page" id="lsh">
+  <div class="algo-header lsh">
+    <div class="icon">L</div>
+    <div>
+      <h1>Euclidean LSH</h1>
+      <p>Locality Sensitive Hashing με multi-probe — <code>ANN/euclidean_lsh.py</code></p>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2><span class="num">1</span> Input</h2>
+    <table>
+      <thead><tr><th>Παράμετρος</th><th>Περιγραφή</th><th>Default</th></tr></thead>
+      <tbody>
+        <tr><td><code>--lsh_k</code></td><td>Αριθμός hash functions ανά table</td><td>10</td></tr>
+        <tr><td><code>--lsh_L</code></td><td>Αριθμός hash tables</td><td>5</td></tr>
+        <tr><td><code>--lsh_w</code></td><td>Πλάτος παραθύρου</td><td>4.0</td></tr>
+        <tr><td><code>seed</code></td><td>Seed αναπαραγωγιμότητας</td><td>42</td></tr>
+        <tr><td><code>probe_radius</code></td><td>Hamming radius για multi-probe</td><td>1</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2><span class="num">2</span> Build Phase</h2>
+    <ol class="step-list">
+      <li><strong>initialize()</strong><span>Για κάθε table l ∈ [0, L): <code>v_l</code> (k×d, N(0,1)), <code>t_l</code> (k, U(0,w)). Δημιουργία <code>defaultdict(list)</code> hash tables.</span></li>
+      <li><strong>_hash(x, table_idx)</strong><span>Υπολογισμός <code>floor((v·x + t) / w)</code> → tuple από k ακέραιους.</span></li>
+      <li><strong>_build_tables()</strong><span>Για κάθε vector i: για κάθε table l: υπολογισμός hash, <code>hash_tables[l][h].append(i)</code>.</span></li>
+    </ol>
+  </div>
+
+  <div class="section">
+    <h2><span class="num">3</span> Query Phase</h2>
+    <ol class="step-list">
+      <li><strong>Ακριβές hash</strong><span>Υπολογισμός hash του query σε κάθε table.</span></li>
+      <li><strong>Multi-probe expansion</strong><span><code>_get_nearby_buckets(h, radius=1)</code>: παραγωγή όλων των hash codes με Hamming distance ≤ radius (αύξηση/μείωση κάθε συντεταγμένης κατά 1).</span></li>
+      <li><strong>Union candidates</strong><span>Συλλογή όλων των indices από τα buckets (set για deduplication).</span></li>
+      <li><strong>Fallback</strong><span>Αν <code>len(candidates) < N*2</code>: επέκταση σε όλα τα buckets των μισών tables.</span></li>
+      <li><strong>Sort & Top-N</strong><span>Υπολογισμός L2 αποστάσεων, sort, return top-N.</span></li>
+    </ol>
+  </div>
+
+  <div class="section">
+    <h2><span class="num">4</span> Μετρικές</h2>
+    <ul class="step-list">
+      <li><strong>Χρόνος αναζήτησης</strong><span>Μέσος χρόνος ανά query σε δευτερόλεπτα.</span></li>
+      <li><strong>QPS</strong><span>Queries per second (1 / time).</span></li>
+      <li><strong>Recall@N</strong><span><code>hits / min(N, |BLAST Top-N|)</code> — υπολογίζεται vs BLAST ground truth.</span></li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2><span class="num">5</span> Output</h2>
+    <div class="result-box">Query Protein: target_001
+Method: Euclidean LSH | Time: 0.1234s | Top-10 | Recall@N: 0.42
+Rank   Neighbor ID    L2 Distance
+1      sp|P12345|PROT_A 1.234
+2      sp|Q67890|PROT_B 1.456
+...</div>
+  </div>
+</section>
+
+<!-- ==================== HYPERCUBE ==================== -->
+<section class="page" id="hypercube">
+  <div class="algo-header hyp">
+    <div class="icon">H</div>
+    <div>
+      <h1>Hypercube</h1>
+      <p>Random projection σε δυαδικές κορυφές — <code>Hypercube/hypercube.py</code></p>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2><span class="num">1</span> Input</h2>
+    <table>
+      <thead><tr><th>Παράμετρος</th><th>Περιγραφή</th><th>Default</th></tr></thead>
+      <tbody>
+        <tr><td><code>--hypercube_k</code></td><td>Bits του υπερκύβου</td><td>10</td></tr>
+        <tr><td><code>--hypercube_M</code></td><td>Μέγιστοι υποψήφιοι</td><td>1000</td></tr>
+        <tr><td><code>--hypercube_probes</code></td><td>Κορυφές προς εξέταση</td><td>5</td></tr>
+        <tr><td><code>w</code></td><td>Πλάτος παραθύρου</td><td>4.0</td></tr>
+        <tr><td><code>seed</code></td><td>Seed</td><td>42</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2><span class="num">2</span> Build Phase</h2>
+    <ol class="step-list">
+      <li><strong>__init__</strong><span>Δημιουργία <code>v</code> (k×d, N(0,1)), <code>t</code> (k, U(0,w)).</span></li>
+      <li><strong>_hash(x)</strong><span><code>tuple((floor((v·x + t) / w) % 2).astype(int))</code> → k-bit δυαδική κορυφή.</span></li>
+      <li><strong>_build_index()</strong><span>Για κάθε vector: <code>cube[vertex].append(idx)</code> — defaultdict(list).</span></li>
+    </ol>
+  </div>
+
+  <div class="section">
+    <h2><span class="num">3</span> Query Phase</h2>
+    <ol class="step-list">
+      <li><strong>Hash query</strong><span>Υπολογισμός <code>query_vertex</code>.</span></li>
+      <li><strong>Hamming vertices generator</strong><span><code>_hamming_vertices(vertex, max_vertices)</code> — παραγωγή ίδιας κορυφής + όλων των 1-bit, 2-bit, ... διαφορών.</span></li>
+      <li><strong>Εξέταση κορυφών</strong><span>Για κάθε κοντινή κορυφή: αν υπάρχει στο cube, υπολογισμός L2 αποστάσεων για τα σημεία της.</span></li>
+      <li><strong>Limits</strong><span>Σταματάει όταν <code>checked ≥ M</code> ή <code>visited_vertices ≥ probes</code>.</span></li>
+      <li><strong>Fallback</strong><span>Αν δεν βρέθηκαν candidates: brute force σε όλο το dataset.</span></li>
+    </ol>
+  </div>
+
+  <div class="section">
+    <h2><span class="num">4</span> Μετρικές</h2>
+    <p>Ίδιες με LSH: <strong>Χρόνος</strong>, <strong>QPS</strong>, <strong>Recall@N</strong> vs BLAST.</p>
+  </div>
+
+  <div class="section">
+    <h2><span class="num">5</span> Output</h2>
+    <div class="result-box">Query Protein: target_001
+Method: Hypercube | Time: 0.0300s | Top-10 | Recall@N: 0.16
+Rank   Neighbor ID    L2 Distance
+1      sp|P12345|PROT_A 1.456
+...</div>
+  </div>
+</section>
+
+<!-- ==================== IVFFLAT ==================== -->
+<section class="page" id="ivfflat">
+  <div class="algo-header ivf">
+    <div class="icon">F</div>
+    <div>
+      <h1>IVF-Flat</h1>
+      <p>k-means clustering + exact distances — <code>IVFFlat/ivfflat.py</code></p>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2><span class="num">1</span> Input</h2>
+    <table>
+      <thead><tr><th>Παράμετρος</th><th>Περιγραφή</th><th>Default</th></tr></thead>
+      <tbody>
+        <tr><td><code>--ivfflat_nlist</code></td><td>Αριθμός clusters</td><td>100</td></tr>
+        <tr><td><code>--ivfflat_nprobe</code></td><td>Clusters προς εξέταση</td><td>10</td></tr>
+        <tr><td><code>seed</code></td><td>Seed</td><td>42</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2><span class="num">2</span> Build Phase</h2>
+    <ol class="step-list">
+      <li><strong>KMeans fit</strong><span><code>KMeans(n_clusters=nlist, n_init=10)</code> — εκπαίδευση στα embeddings.</span></li>
+      <li><strong>cluster_assignments</strong><span>Label κάθε vector (0..nlist-1).</span></li>
+      <li><strong>Inverted lists</strong><span>Για κάθε cluster: λίστα από indices vectors που ανήκουν σε αυτό.</span></li>
+    </ol>
+  </div>
+
+  <div class="section">
+    <h2><span class="num">3</span> Query Phase</h2>
+    <ol class="step-list">
+      <li><strong>find_nearest_centroids</strong><span>Υπολογισμός L2 απόστασης query → κάθε centroid, sort, επιλογή nprobe.</span></li>
+      <li><strong>Union candidates</strong><span>Συλλογή όλων των vectors από τα nprobe clusters.</span></li>
+      <li><strong>Exact distance</strong><span>Υπολογισμός L2 για κάθε candidate.</span></li>
+      <li><strong>Sort & Top-N</strong><span>Sort, return top-N (protein_id, distance).</span></li>
+    </ol>
+  </div>
+
+  <div class="section">
+    <h2><span class="num">4</span> Extra: Silhouette Score</h2>
+    <p>Υπολογισμός silhouette score (sample=100) για αξιολόγηση ποιότητας clustering:</p>
+    <pre><span class="kw">for</span> sample <span class="kw">in</span> sample_indices:
+    a_i = mean distance από ίδιο cluster
+    b_i = min mean distance από άλλα clusters
+    silhouette = (b_i - a_i) / max(a_i, b_i)</pre>
+  </div>
+
+  <div class="section">
+    <h2><span class="num">5</span> Output</h2>
+    <div class="result-box">Building IVF-Flat index with 100 clusters...
+IVF-Flat index built. Cluster sizes: [500, 487, 512, 495, 478]...
+
+Query Protein: target_001
+Method: IVF-Flat | Time: 3.7627s | Top-10 | Recall@N: 0.28
+Rank   Neighbor ID    L2 Distance
+1      sp|P12345|PROT_A 1.234
+...</div>
+  </div>
+</section>
+
+<!-- ==================== IVFPQ ==================== -->
+<section class="page" id="ivfpq">
+  <div class="algo-header pq">
+    <div class="icon">P</div>
+    <div>
+      <h1>IVF-PQ</h1>
+      <p>Product Quantization + LUT — <code>IVFPQ/ivfpq.py</code></p>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2><span class="num">1</span> Input</h2>
+    <table>
+      <thead><tr><th>Παράμετρος</th><th>Περιγραφή</th><th>Default</th></tr></thead>
+      <tbody>
+        <tr><td><code>--ivfpq_nlist</code></td><td>IVF clusters</td><td>100</td></tr>
+        <tr><td><code>--ivfpq_nprobe</code></td><td>Clusters προς εξέταση</td><td>10</td></tr>
+        <tr><td><code>--ivfpq_m</code></td><td>Αριθμός subspaces (πρέπει dim % m == 0)</td><td>8</td></tr>
+        <tr><td><code>n_bits</code></td><td>Bits ανά subspace (256 centroids)</td><td>8</td></tr>
+      </tbody>
+    </table>
+    <p style="color:var(--text-muted);">Για 320d embeddings και m=8: sub_dim = 40.</p>
+  </div>
+
+  <div class="section">
+    <h2><span class="num">2</span> Build Phase</h2>
+    <ol class="step-list">
+      <li><strong>IVF Clustering</strong><span>KMeans(nlist) → <code>ivf_centroids</code>, <code>ivf_labels</code>.</span></li>
+      <li><strong>Inverted lists</strong><span>Ανάθεση κάθε vector στο cluster του.</span></li>
+      <li><strong>Residuals</strong><span><code>residual = point - ivf_centroid[label]</code>.</span></li>
+      <li><strong>PQ Training</strong><span>Για κάθε subspace m ∈ [0, M): KMeans σε 256 centroids → codebook[m]. Προσαρμογή cluster count ανά sub_dim.</span></li>
+      <li><strong>Encoding</strong><span>Για κάθε point: για κάθε subspace: <code>argmin_c ||subvector - codebook[m][c]||</code> → <code>pq_code[i][m]</code>.</span></li>
+    </ol>
+  </div>
+
+  <div class="section">
+    <h2><span class="num">3</span> Query Phase</h2>
+    <ol class="step-list">
+      <li><strong>Find nearest centroids</strong><span>nprobe πλησιέστερα IVF centroids.</span></li>
+      <li><strong>Build LUT</strong><span>Για κάθε subspace: LUT[m][c] = ||sub_query - codebook[m][c]||². Παράγει M × 256 entries.</span></li>
+      <li><strong>Distances μέσω LUT</strong><span><code>dist_sq += LUT[m][pq_code[point][m]]²</code> — ΜΟΝΟ M προσθέσεις!</span></li>
+      <li><strong>Sort & Top-N</strong><span>Sort κατά dist, return top-N.</span></li>
+    </ol>
+
+    <div class="alert info">
+      <strong>최적화:</strong> Αντί για M × sub_dim = 8 × 40 = 320 υπολογισμούς, 
+      ο IVFPQ κάνει <strong>8 προσθέσεις</strong> μέσω LUT.
+    </div>
+  </div>
+
+  <div class="section">
+    <h2><span class="num">4</span> Μετρικές</h2>
+    <p>Ίδιες: <strong>Χρόνος</strong>, <strong>QPS</strong>, <strong>Recall@N</strong>.</p>
+  </div>
+
+  <div class="section">
+    <h2><span class="num">5</span> Output</h2>
+    <div class="result-box">IVFPQ initialized: n_clusters=100, M=8, n_bits=8
+Building IVFPQ index for 49999 vectors of dimension 320
+Step 1: IVF clustering...
+Step 2: Creating inverted lists...
+Step 3: Computing residuals...
+Step 4: PQ training with M=8 subspaces...
+Step 5: Encoding vectors...
+IVFPQ index built successfully! 49999 vectors encoded.
+
+Query Protein: target_001
+Method: IVF-PQ | Time: 0.3017s | Top-10 | Recall@N: 0.27
+Rank   Neighbor ID    L2 Distance
+1      sp|P12345|PROT_A 1.312
+...</div>
+  </div>
+</section>
+
+<!-- ==================== NEURAL LSH ==================== -->
+<section class="page" id="neural">
+  <div class="algo-header neural">
+    <div class="icon">N</div>
+    <div>
+      <h1>Neural LSH</h1>
+      <p>Learned indexing με MLP + k-NN graph — <code>Neural/neural_lsh.py</code></p>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2><span class="num">1</span> Input</h2>
+    <table>
+      <thead><tr><th>Παράμετρος</th><th>Περιγραφή</th><th>Default</th></tr></thead>
+      <tbody>
+        <tr><td><code>--neural_k</code></td><td>k για k-NN graph</td><td>10</td></tr>
+        <tr><td><code>--neural_m</code></td><td>Αριθμός partitions</td><td>100</td></tr>
+        <tr><td><code>--neural_T</code></td><td>Top-T bins (multi-probe)</td><td>5</td></tr>
+        <tr><td><code>--neural_epochs</code></td><td>Epochs εκπαίδευσης MLP</td><td>10</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2><span class="num">2</span> Build Phase</h2>
+    <ol class="step-list">
+      <li><strong>k-NN graph</strong><span><code>NearestNeighbors(n_neighbors=k+1)</code> — για κάθε σημείο βρίσκουμε τους k κοντινότερους (αγνοώντας τον εαυτό).</span></li>
+      <li><strong>Adjacency list</strong><span>Δημιουργία <code>adj = {i: [j1, j2, ...]}</code>.</span></li>
+      <li><strong>Partitioning</strong><span>KMeans(n_clusters=m) → partition labels για κάθε σημείο. <em>(Σημείωση: Εδώ χρησιμοποιείται KMeans αντί για KaHIP.)</em></span></li>
+      <li><strong>MLP training</strong><span>MLP(d → 256 → 256 → m). Εκπαίδευση με CrossEntropyLoss, Adam(lr=0.001), 80/20 split, batch=128.</span></li>
+      <li><strong>Inverted file</strong><span>dict <code>{part_id: [indices]}</code>.</span></li>
+      <li><strong>Save artifacts</strong><span><code>model.pth</code>, <code>inverted_file.pkl</code>, <code>partition.npy</code>, <code>ids.txt</code>.</span></li>
+    </ol>
+  </div>
+
+  <div class="section">
+    <h2><span class="num">3</span> Query Phase</h2>
+    <ol class="step-list">
+      <li><strong>MLP inference</strong><span><code>outputs = model(query_tensor)</code> → logits (m classes).</span></li>
+      <li><strong>Softmax + top-T</strong><span><code>probs = F.softmax(outputs); top_probs, top_parts = topk(probs, T)</code>.</span></li>
+      <li><strong>Union candidates</strong><span>Συλλογή όλων των indices από τα T partitions.</span></li>
+      <li><strong>Distance computation</strong><span>Διανυσματικός υπολογισμός: <code>np.linalg.norm(candidates - query, axis=1)</code>.</span></li>
+      <li><strong>Sort & Top-N</strong><span>argsort, return top-N.</span></li>
+    </ol>
+  </div>
+
+  <div class="section">
+    <h2><span class="num">4</span> Μετρικές</h2>
+    <p>Ίδιες: <strong>Χρόνος</strong>, <strong>QPS</strong>, <strong>Recall@N</strong>.</p>
+  </div>
+
+  <div class="section">
+    <h2><span class="num">5</span> Output</h2>
+    <div class="result-box">Building Neural LSH index...
+  Building k-NN graph...
+  Creating adjacency matrix...
+  Partitioning into 100 clusters...
+  Training MLP...
+    Epoch 1/10: Train Loss: 3.2145, Val Loss: 3.0124, Val Acc: 25.43%
+    ...
+    Epoch 10/10: Train Loss: 1.5432, Val Loss: 1.6214, Val Acc: 58.32%
+  Best validation accuracy: 58.32%
+  Building inverted file...
+Index saved to neural_index
+
+Query Protein: target_001
+Method: Neural LSH | Time: 0.0048s | Top-10 | Recall@N: 0.29
+Rank   Neighbor ID    L2 Distance
+1      sp|P12345|PROT_A 1.198
+...</div>
+  </div>
+</section>
+
+<!-- ==================== EXPERIMENTAL STUDY ==================== -->
+<section class="page" id="study">
+  <div class="hero" style="padding-bottom:1.5rem;">
+    <h1>Πειραματική Μελέτη</h1>
+    <p>Συγκριτική αξιολόγηση 5 ANN μεθόδων σε πραγματικά δεδομένα πρωτεϊνών</p>
+  </div>
+
+  <div class="section">
+    <h2>🔬 Μεθοδολογία</h2>
+    <div class="grid">
+      <div class="card">
+        <h3>Δεδομένα</h3>
+        <p><strong>Database:</strong> 50.000 πρωτεΐνες από SwissProt.<br>
+        <strong>Queries:</strong> targets.fasta.<br>
+        <strong>Embeddings:</strong> ESM-2 (320d).</p>
+      </div>
+      <div class="card">
+        <h3>Ground Truth</h3>
+        <p>BLASTP με evalue &lt; 0.01, outfmt 6.<br>
+        Top-50 hits ανά query χρησιμοποιούνται για Recall@50.</p>
+      </div>
+      <div class="card">
+        <h3>Μετρικές</h3>
+        <p><strong>Recall@50:</strong> hits / min(50, |BLAST|).<br>
+        <strong>Χρόνος:</strong> μέσος χρόνος ανά query.<br>
+        <strong>QPS:</strong> queries per second.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- LSH RESULTS -->
+  <div class="section">
+    <h2>📊 LSH Results</h2>
+
+    <div class="exp-table-wrap">
+      <table class="exp-table">
+        <thead>
+          <tr><th>#</th><th>k</th><th>L</th><th>w</th><th>Time (s)</th><th>QPS</th><th>Recall@50</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>4</td><td>30</td><td>15</td><td>0.1962</td><td>5.2</td><td>0.318</td></tr>
+          <tr><td>2</td><td>6</td><td>20</td><td>10</td><td>0.1731</td><td>5.9</td><td>0.318</td></tr>
+          <tr><td>3</td><td>6</td><td>40</td><td>20</td><td>0.1833</td><td>5.6</td><td>0.318</td></tr>
+          <tr><td>4</td><td>8</td><td>15</td><td>8</td><td>0.2342</td><td>4.7</td><td>0.318</td></tr>
+          <tr><td>5</td><td>10</td><td>10</td><td>6</td><td><strong style="color:var(--success)">0.0746</strong></td><td><strong style="color:var(--success)">17.3</strong></td><td>0.320</td></tr>
+          <tr><td>6</td><td>10</td><td>10</td><td>8</td><td>0.1255</td><td>5.6</td><td>0.318</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Recall@50</h3>
+    <div class="chart">
+      <div class="chart-bar"><span class="value">0.318</span><div class="bar blue" style="height:32%"></div><span class="label">1</span></div>
+      <div class="chart-bar"><span class="value">0.318</span><div class="bar blue" style="height:32%"></div><span class="label">2</span></div>
+      <div class="chart-bar"><span class="value">0.318</span><div class="bar blue" style="height:32%"></div><span class="label">3</span></div>
+      <div class="chart-bar"><span class="value">0.318</span><div class="bar blue" style="height:32%"></div><span class="label">4</span></div>
+      <div class="chart-bar"><span class="value">0.320</span><div class="bar blue" style="height:32%"></div><span class="label">5</span></div>
+      <div class="chart-bar"><span class="value">0.318</span><div class="bar blue" style="height:32%"></div><span class="label">6</span></div>
+    </div>
+  </div>
+
+  <!-- HYPERCUBE RESULTS -->
+  <div class="section">
+    <h2>📊 Hypercube Results</h2>
+
+    <div class="exp-table-wrap">
+      <table class="exp-table">
+        <thead>
+          <tr><th>#</th><th>k</th><th>M</th><th>p</th><th>w</th><th>Time (s)</th><th>QPS</th><th>Recall@50</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>8</td><td>1500</td><td>8</td><td>6</td><td>0.0068</td><td>153.9</td><td><strong style="color:var(--success)">0.163</strong></td></tr>
+          <tr><td>2</td><td>10</td><td>1000</td><td>5</td><td>4</td><td>0.0013</td><td>1718.7</td><td>0.038</td></tr>
+          <tr><td>3</td><td>10</td><td>1000</td><td>5</td><td>8</td><td>0.0050</td><td>214.5</td><td>0.066</td></tr>
+          <tr><td>4</td><td>10</td><td>1000</td><td>10</td><td>4</td><td>0.0026</td><td>692.3</td><td>0.095</td></tr>
+          <tr><td>5</td><td>10</td><td>5000</td><td>5</td><td>4</td><td>0.0017</td><td>1408.0</td><td>0.041</td></tr>
+          <tr><td>6</td><td>12</td><td>2500</td><td>12</td><td>5</td><td>0.0030</td><td>515.3</td><td>0.089</td></tr>
+          <tr><td>7</td><td>16</td><td>3500</td><td>16</td><td>3</td><td>0.0130</td><td><strong style="color:var(--success)">8820.9</strong></td><td>0.030</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Recall@50</h3>
+    <div class="chart">
+      <div class="chart-bar"><span class="value">0.163</span><div class="bar green" style="height:16%"></div><span class="label">1</span></div>
+      <div class="chart-bar"><span class="value">0.038</span><div class="bar green" style="height:4%"></div><span class="label">2</span></div>
+      <div class="chart-bar"><span class="value">0.066</span><div class="bar green" style="height:7%"></div><span class="label">3</span></div>
+      <div class="chart-bar"><span class="value">0.095</span><div class="bar green" style="height:10%"></div><span class="label">4</span></div>
+      <div class="chart-bar"><span class="value">0.041</span><div class="bar green" style="height:4%"></div><span class="label">5</span></div>
+      <div class="chart-bar"><span class="value">0.089</span><div class="bar green" style="height:9%"></div><span class="label">6</span></div>
+      <div class="chart-bar"><span class="value">0.030</span><div class="bar green" style="height:3%"></div><span class="label">7</span></div>
+    </div>
+  </div>
+
+  <!-- IVFFLAT RESULTS -->
+  <div class="section">
+    <h2>📊 IVF-Flat Results</h2>
+
+    <div class="exp-table-wrap">
+      <table class="exp-table">
+        <thead>
+          <tr><th>#</th><th>nlist</th><th>nprobe</th><th>Time (s)</th><th>QPS</th><th>Recall@50</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>50</td><td>5</td><td>3.7627</td><td>51.4</td><td>0.278</td></tr>
+          <tr><td>2</td><td>50</td><td>20</td><td>5.0295</td><td>11.7</td><td>0.318</td></tr>
+          <tr><td>3</td><td>200</td><td>10</td><td>19.2361</td><td>92.7</td><td>0.304</td></tr>
+          <tr><td>4</td><td>150</td><td>15</td><td>15.1047</td><td>51.8</td><td><strong style="color:var(--success)">0.318</strong></td></tr>
+          <tr><td>5</td><td>200</td><td>50</td><td>20.5713</td><td>24.4</td><td>0.318</td></tr>
+          <tr><td>6</td><td>100</td><td>5</td><td>8.2772</td><td>83.1</td><td>0.286</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- IVFPQ RESULTS -->
+  <div class="section">
+    <h2>📊 IVF-PQ Results</h2>
+
+    <div class="exp-table-wrap">
+      <table class="exp-table">
+        <thead>
+          <tr><th>#</th><th>nlist</th><th>nprobe</th><th>m</th><th>Time (s)</th><th>QPS</th><th>Recall@50</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>200</td><td>100</td><td>8</td><td>0.9801</td><td>1.0</td><td>0.260</td></tr>
+          <tr><td>2</td><td>100</td><td>25</td><td>8</td><td>0.3017</td><td>3.4</td><td>0.267</td></tr>
+          <tr><td>3</td><td>50</td><td>10</td><td>8</td><td>0.1301</td><td>7.9</td><td>0.264</td></tr>
+          <tr><td>4</td><td>100</td><td>25</td><td>32</td><td>1.1317</td><td>0.9</td><td>0.272</td></tr>
+          <tr><td>5</td><td>100</td><td>25</td><td>4</td><td>0.1657</td><td>6.3</td><td>0.251</td></tr>
+          <tr><td>6</td><td>100</td><td>25</td><td>16</td><td>0.6088</td><td>1.7</td><td>0.297</td></tr>
+          <tr><td>7</td><td>400</td><td>200</td><td>8</td><td>2.2599</td><td>0.4</td><td>0.274</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="alert info">
+      <strong>Best Recall:</strong> #6 (m=16) με <strong>0.297</strong> — 
+      μεγαλύτερο m δίνει καλύτερη ακρίβεια αλλά αυξάνει χρόνο.
+    </div>
+  </div>
+
+  <!-- NEURAL LSH RESULTS -->
+  <div class="section">
+    <h2>📊 Neural LSH Results</h2>
+
+    <div class="exp-table-wrap">
+      <table class="exp-table">
+        <thead>
+          <tr><th>#</th><th>k</th><th>m</th><th>T</th><th>epochs</th><th>Time (s)</th><th>QPS</th><th>Recall@50</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>10</td><td>100</td><td>5</td><td>10</td><td>0.0048</td><td>228.7</td><td>0.293</td></tr>
+          <tr><td>2</td><td>20</td><td>100</td><td>5</td><td>10</td><td>0.0048</td><td>238.6</td><td>0.293</td></tr>
+          <tr><td>3</td><td>10</td><td>200</td><td>5</td><td>10</td><td>0.0027</td><td><strong style="color:var(--success)">401.1</strong></td><td>0.238</td></tr>
+          <tr><td>4</td><td>10</td><td>100</td><td>15</td><td>10</td><td>0.0162</td><td>74.5</td><td><strong style="color:var(--success)">0.310</strong></td></tr>
+          <tr><td>5</td><td>10</td><td>100</td><td>5</td><td>20</td><td>0.0038</td><td>306.9</td><td>0.270</td></tr>
+          <tr><td>6</td><td>15</td><td>150</td><td>10</td><td>15</td><td>0.0050</td><td>209.3</td><td>0.271</td></tr>
+          <tr><td>7</td><td>25</td><td>250</td><td>20</td><td>25</td><td>0.0051</td><td>209.6</td><td><strong style="color:var(--success)">0.310</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Recall@50</h3>
+    <div class="chart">
+      <div class="chart-bar"><span class="value">0.293</span><div class="bar purple" style="height:29%"></div><span class="label">1</span></div>
+      <div class="chart-bar"><span class="value">0.293</span><div class="bar purple" style="height:29%"></div><span class="label">2</span></div>
+      <div class="chart-bar"><span class="value">0.238</span><div class="bar purple" style="height:24%"></div><span class="label">3</span></div>
+      <div class="chart-bar"><span class="value">0.310</span><div class="bar purple" style="height:31%"></div><span class="label">4</span></div>
+      <div class="chart-bar"><span class="value">0.270</span><div class="bar purple" style="height:27%"></div><span class="label">5</span></div>
+      <div class="chart-bar"><span class="value">0.271</span><div class="bar purple" style="height:27%"></div><span class="label">6</span></div>
+      <div class="chart-bar"><span class="value">0.310</span><div class="bar purple" style="height:31%"></div><span class="label">7</span></div>
+    </div>
+  </div>
+
+  <!-- OVERALL COMPARISON -->
+  <div class="section">
+    <h2>⚖️ Συνολική Σύγκριση</h2>
+
+    <div class="exp-table-wrap">
+      <table class="exp-table">
+        <thead>
+          <tr>
+            <th>Μέθοδος</th><th>Best Recall@50</th><th>Best QPS</th>
+            <th>Time/query</th><th>Κατάταξη (Recall)</th><th>Κατάταξη (QPS)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Euclidean LSH</strong></td><td><strong style="color:var(--success)">0.320</strong></td><td>17.3</td><td>0.075s</td><td>1η</td><td>4η</td></tr>
+          <tr><td><strong>IVF-Flat</strong></td><td>0.318</td><td>92.7</td><td>15.1s</td><td>2η</td><td>5η</td></tr>
+          <tr><td><strong>Neural LSH</strong></td><td>0.310</td><td>401.1</td><td>0.003s</td><td>3η</td><td>3η</td></tr>
+          <tr><td><strong>IVF-PQ</strong></td><td>0.297</td><td>7.9</td><td>0.13s</td><td>4η</td><td>4η</td></tr>
+          <tr><td><strong>Hypercube</strong></td><td>0.163</td><td><strong style="color:var(--success)">8820.9</strong></td><td>0.001s</td><td>5η</td><td>1η</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Recall@50 — Συγκριτικά</h3>
+    <div class="chart">
+      <div class="chart-bar"><span class="value">0.320</span><div class="bar blue" style="height:32%"></div><span class="label">LSH</span></div>
+      <div class="chart-bar"><span class="value">0.163</span><div class="bar green" style="height:16%"></div><span class="label">Hypercube</span></div>
+      <div class="chart-bar"><span class="value">0.318</span><div class="bar amber" style="height:32%"></div><span class="label">IVF-Flat</span></div>
+      <div class="chart-bar"><span class="value">0.297</span><div class="bar red" style="height:30%"></div><span class="label">IVF-PQ</span></div>
+      <div class="chart-bar"><span class="value">0.310</span><div class="bar purple" style="height:31%"></div><span class="label">Neural</span></div>
+    </div>
+  </div>
+
+  <!-- BEST CHOICE -->
+  <div class="section">
+    <h2>🏆 Βέλτιστη Επιλογή ανά Σενάριο</h2>
+
+    <div class="grid">
+      <div class="card">
+        <h3>⚡ Γρήγορη προκαταρκτική</h3>
+        <p><strong>Hypercube</strong> — 8820 QPS αλλά μόνο 0.16 Recall. Καλό για filtering.</p>
+      </div>
+      <div class="card">
+        <h3>⚖️ Ισορροπημένη</h3>
+        <p><strong>Neural LSH</strong> — 401 QPS + 0.31 Recall. Το πιο ισορροπημένο.</p>
+      </div>
+      <div class="card">
+        <h3>💾 Μεγάλα datasets</h3>
+        <p><strong>IVF-PQ</strong> — συμπίεση με LUT. Trade-off ακρίβειας-μνήμης.</p>
+      </div>
+      <div class="card">
+        <h3>🎯 Μέγιστη ακρίβεια</h3>
+        <p><strong>Euclidean LSH</strong> — 0.320 Recall. Καλύτερο για offline ανάλυση.</p>
+      </div>
+    </div>
+
+    <div class="alert success">
+      <strong>Συνολικό συμπέρασμα:</strong> Το <strong>Neural LSH</strong> 
+      είναι η πιο ισορροπημένη μέθοδος (3η σε ταχύτητα, 3η σε ακρίβεια), 
+      ενώ το <strong>Euclidean LSH</strong> παραμένει η πιο ακριβής επιλογή 
+      για βιολογικά δεδομένα.
+    </div>
+  </div>
+
+  <!-- REMOTE HOMOLOG EXAMPLES -->
+  <div class="section">
+    <h2>🧬 Παραδείγματα Remote Homologs</h2>
+    <p>
+      Οι παρακάτω περιπτώσεις δείχνουν πώς οι embedding-based μέθοδοι μπορούν 
+      να εντοπίσουν <strong>υποψήφια remote homologs</strong> που το BLAST 
+      δεν ανιχνεύει (0% sequence identity).
+    </p>
+
+    <div class="example-box">
+      <div class="header">
+        <span class="label">Παράδειγμα 1</span>
+        <span class="query-id">A0A009I3Y5</span>
+      </div>
+      <div class="finding">Μέθοδος: <strong>Euclidean LSH</strong></div>
+      <div class="finding">Neighbor: <strong>sp|P14181|LICA2_HAEIF</strong></div>
+      <div class="finding">L2 Distance: <span class="val">1.685</span> | BLAST Identity: <span class="no">0.0%</span></div>
+      <div class="finding" style="color:var(--text-muted); font-style:italic;">
+        Πιθανή δομική/λειτουργική ομοιότητα που το embedding έμαθε — 
+        λιγάση του H. influenzae που το BLAST δεν ανιχνεύει.
+      </div>
+    </div>
+
+    <div class="example-box">
+      <div class="header">
+        <span class="label">Παράδειγμα 2</span>
+        <span class="query-id">A0A009PCK4</span>
+      </div>
+      <div class="finding">Μέθοδος: <strong>Euclidean LSH</strong></div>
+      <div class="finding">7ος γείτονας: <strong>sp|P24362|KRB2_VACCW</strong> — <span class="ok">27.0% identity (BLAST Top-N)</span></div>
+      <div class="finding">Άλλοι 9: <span class="no">0.0% identity</span></div>
+      <div class="finding" style="color:var(--text-muted); font-style:italic;">
+        Το LSH επιστρέφει <em>τόσο</em> γνωστές ομολογίες <em>όσο και</em> 
+        νέες υποψήφιες — δείχνει ότι ο embedding space διατηρεί και τα δύο.
+      </div>
+    </div>
+
+    <div class="example-box">
+      <div class="header">
+        <span class="label">Παράδειγμα 3</span>
+        <span class="query-id">A0A009HPM0</span>
+      </div>
+      <div class="finding">Μέθοδος: <strong>IVF-PQ</strong></div>
+      <div class="finding">Top-10: <span class="no">9/10 με 0% BLAST identity</span></div>
+      <div class="finding">Επιλεγμένος: <strong>sp|Q612F5|PCCA_CAEBR</strong> (L2 = 1.270)</div>
+      <div class="finding" style="color:var(--text-muted); font-style:italic;">
+        Δείχνει ότι το IVF-PQ μπορεί να προωθήσει εντελώς νέες υποψήφιες 
+        για βιολογική επικύρωση.
+      </div>
+    </div>
+
+    <div class="example-box">
+      <div class="header">
+        <span class="label">Παράδειγμα 4</span>
+        <span class="query-id">A0A010Q8R4</span>
+      </div>
+      <div class="finding">Μέθοδος: <strong>IVF-PQ</strong></div>
+      <div class="finding">Recall@50: <span class="val">0.500</span></div>
+      <div class="finding">Επιλεγμένος: <strong>sp|P0CS29|ATG18_CRYNB</strong> (L2 = 1.356)</div>
+      <div class="finding" style="color:var(--text-muted); font-style:italic;">
+        Υψηλό recall + μη ταυτισμένοι γείτονες = πιθανή λειτουργική σύνδεση 
+        (αυτοφαγία) που δεν φαίνεται στην ακολουθία.
+      </div>
+    </div>
+
+    <div class="alert warn">
+      <strong>Προσοχή:</strong> Μικρή L2 απόσταση <em>δεν</em> συνεπάγεται 
+      πάντα βιολογική σχέση — υπάρχουν <strong>false positives</strong>. 
+      Τα αποτελέσματα πρέπει να αξιολογούνται σε συνδυασμό με βιολογική 
+      πληροφορία (Pfam, GO, UniProt).
+    </div>
+  </div>
+
+  <!-- LIMITATIONS -->
+  <div class="section">
+    <h2>⚠️ Περιορισμοί & Βελτιώσεις</h2>
+
+    <h3>Περιορισμοί</h3>
+    <ul class="step-list">
+      <li><strong>Ποιότητα embeddings</strong><span>Το ESM-2 δεν είναι ειδικά εκπαιδευμένο για remote homolog detection.</span></li>
+      <li><strong>Trade-off ταχύτητας-ακρίβειας</strong><span>Πολύ υψηλό QPS (Hypercube) συνεπάγεται χαμηλό Recall.</span></li>
+      <li><strong>BLAST ως ground truth</strong><span>Δεν ανιχνεύει όλες τις πραγματικές ομολογίες — το Recall υποεκτιμά.</span></li>
+    </ul>
+
+    <h3>Προτάσεις Βελτίωσης</h3>
+    <ul class="step-list">
+      <li><strong>Μεγαλύτερα ESM-2 variants</strong><span>esm2_t33_650M ή esm2_t36_3B για καλύτερα embeddings.</span></li>
+      <li><strong>Extra βιολογική πληροφορία</strong><span>Pfam domains, GO terms, PDB structures.</span></li>
+      <li><strong>Συνδυασμός μεθόδων</strong><span>Γρήγορο filtering με Hypercube + ακριβής ανάλυση με IVF-Flat.</span></li>
+    </ul>
+  </div>
+
+  <!-- CONCLUSION -->
+  <div class="section">
+    <h2>🏁 Συμπέρασμα</h2>
+
+    <div class="stats">
+      <div class="stat">
+        <span class="value">0.320</span>
+        <span class="name">Best Recall@50 (LSH)</span>
+      </div>
+      <div class="stat">
+        <span class="value">8821</span>
+        <span class="name">Best QPS (Hypercube)</span>
+      </div>
+      <div class="stat">
+        <span class="value">0.003s</span>
+        <span class="name">Min Time (Neural)</span>
+      </div>
+      <div class="stat">
+        <span class="value">5</span>
+        <span class="name">Methods Compared</span>
+      </div>
+    </div>
+
+    <p>
+      Η εργασία έδειξε ότι οι <strong>embedding-based μέθοδοι</strong> μπορούν 
+      να εντοπίσουν <strong>πιθανές ομολογίες</strong> που δεν ανιχνεύονται 
+      από το BLAST, ειδικά σε περιπτώσεις χαμηλής ομοιότητας ακολουθίας. 
+      Το <strong>Neural LSH</strong> παρουσίασε την πιο ισορροπημένη σχέση 
+      ταχύτητας-ακρίβειας, ενώ το <strong>IVF-PQ</strong> ήταν ιδιαίτερα 
+      αποδοτικό σε σενάρια όπου η ταχύτητα είναι κρίσιμη.
+    </p>
+    <p style="color:var(--text-muted); margin-top:0.75rem;">
+      Συνολικά, ο συνδυασμός σύγχρονων <strong>protein language models</strong> 
+      και αποδοτικών μεθόδων <strong>ANN</strong> αποτελεί ένα χρήσιμο 
+      εργαλείο για τη μελέτη απομακρυσμένων ομόλογων πρωτεϊνών.
+    </p>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  Εργασία · Ανάπτυξη Λογισμικού για Αλγοριθμικά Προβλήματα · ΕΚΠΑ<br>
+  <span style="opacity:0.6;">© 2025 — Παπαθανασίου Ελένη · Τόντου Αλτάνη-Δάφνη</span>
+</footer>
+
+<script>
+function go(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
+  
+  const target = document.getElementById(page);
+  if (target) target.classList.add('active');
+  
+  const link = document.querySelector(`.nav-links a[data-page="${page}"]`);
+  if (link) link.classList.add('active');
+  
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  history.replaceState(null, '', '#' + page);
+}
+
+window.addEventListener('load', () => {
+  const hash = window.location.hash.slice(1) || 'home';
+  go(hash);
+});
+
+window.addEventListener('hashchange', () => {
+  const hash = window.location.hash.slice(1) || 'home';
+  go(hash);
+});
+</script>
+</body>
+</html>
